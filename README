@@ -1,0 +1,17 @@
+--------------------
+gitw
+--------------------
+Version 0.1
+
+Requirements:
+ - Go revision >= '15b63cc10b22' (17.11.2011) from http://golang.org
+ - or a Go version 1 compiler suite
+
+Compiling gitw:
+$ make -f Makefile-gitw
+
+Compiling gitw-http
+$ make -f Makefile-gitw-http
+
+Example JSON configuration file for a repository is in 'example.json'.
+

@@ -1,0 +1,14 @@
+---------------
+gitw
+---------------
+
+- custom paths for output fils
+- e-mail notification on failures
+- possible support for other VCS
+
+---------------
+gitw-http
+---------------
+
+- print revision number, last commit entry
+- use templates instead of hardcoded HTML
