@@ -125,8 +125,7 @@ func AnalyzeTest(repository Repository) bool {
 }
 
 func ViewLog(w http.ResponseWriter, req *http.Request) {
-	index := req.URL.Path[1:]
-	io.WriteString(w, index)
+	io.WriteString(w, req.URL.RawQuery)
 }
 
 func Index(w http.ResponseWriter, req *http.Request) {
@@ -179,7 +178,7 @@ index := `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/T
 
 func main() {
 	http.HandleFunc("/", Index)
-	http.HandleFunc("/viewlog/*", ViewLog)
+	http.HandleFunc("/viewlog/", ViewLog)
 
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {

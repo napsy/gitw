@@ -2,5 +2,6 @@
 	"name"	      : "testing",
 	"location"    : "/home/luka/git/tarock.git",
 	"build"		  : "make",
-	"notifyemail" : "joe@example.com"
+	"outputdirectory" : "/home/luka/Desktop/",
+	"notifyemail" : "mail@example.com"
 }

@@ -1,0 +1,7 @@
+{
+	"RepositoriesRoot" : "repositories",
+	"MailAddress"      : "some@example.com",
+	"MailHost"         : "smtp.example.com:25",
+	"MailUsername"     : "some@example.com",
+	"MailPassword"     : "mypassword"
+}

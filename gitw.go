@@ -41,9 +41,20 @@ import (
 	"io/ioutil"
 	"fmt"
 	"encoding/gob"
+	"net/smtp"
 	"strings"
 	"exp/inotify"
 )
+
+type Config struct {
+	RepositoriesRoot string
+	MailAddress string
+	MailHost string
+	MailUsername string
+	MailPassword string
+}
+
+var GlobalConfig Config
 
 type Repository struct {
 	Name string
@@ -53,7 +64,8 @@ type Repository struct {
 	NotifyEmail string
 }
 
-func (repository Repository) Checkout() string {
+func (repository Repository) Checkout() (string, bool) {
+	ok := true
 	status := []byte("succ\n\n")
 	tmpDir, _ := ioutil.TempDir(os.TempDir(), ".gitw-checkout-")
 	fmt.Printf(":: Checking out '%s' in %s\n", repository.Name, tmpDir)
@@ -63,16 +75,18 @@ func (repository Repository) Checkout() string {
 	if err != nil {
 		fmt.Printf("Erorr running git: %s\n", err)
 		status = []byte("fail\n\n")
+		ok = false
 	}
 	status = append(status, output...)
 	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-checkout-output.txt", status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
-	return tmpDir
+	return tmpDir, ok
 }
 
-func (repository Repository) BuildCheckout(tmpDir string) {
+func (repository Repository) BuildCheckout(tmpDir string) bool {
+	ok := true
 	fmt.Printf(":: Building '%s'\n", repository.Name)
 	status := []byte("succ\n\n")
 	cmd := exec.Command(repository.Build)
@@ -80,12 +94,39 @@ func (repository Repository) BuildCheckout(tmpDir string) {
 	if err != nil {
 		fmt.Printf("Erorr running %s: %s\n", repository.Build, err)
 		status = []byte("fail\n\n")
+		ok = false
 	}
 	status = append(status, output...)
 
 	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-build-output.txt", status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
+	}
+	return ok
+}
+
+func SendMailNotification(repository *Repository, message string) {
+	str := "From: gitw mail notification service <" + GlobalConfig.MailAddress + ">\nTo: Repository Owner <" + repository.NotifyEmail + ">\nSubject: [" + repository.Name + "] error notification\n\nSomething went wrong while handling the repository '" + repository.Name + "'. Please check the output log files!\n"
+	auth := smtp.PlainAuth(GlobalConfig.MailUsername, GlobalConfig.MailUsername, GlobalConfig.MailPassword, GlobalConfig.MailHost)
+	err := smtp.SendMail(GlobalConfig.MailHost + ":25", auth, GlobalConfig.MailAddress, []string{repository.NotifyEmail}, []byte(str))
+	if err != nil {
+		fmt.Printf("Error sending mail: %s\n", err)
+	}
+}
+func ReadConfig() {
+	gob.Register(&Config{})
+
+	config, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		fmt.Println("Unable to read configuration from file!")
+		return
+	}
+	r := strings.NewReader(string(config))
+	decoder := json.NewDecoder(r)
+
+	e := decoder.Decode(&GlobalConfig)
+	if e != nil {
+		fmt.Printf("Error decoding gitw configuration from file: %s\n", e)
 	}
 }
 
@@ -175,8 +216,12 @@ func RepositoryWatchdog(repositories []Repository) {
 				for _, repository := range repositories {
 					skipIdx := strings.Index(ev.Name, gitWatchFile)
 					if repository.Location == ev.Name[:skipIdx] {
-						tmpDir := repository.Checkout()
-						repository.BuildCheckout(tmpDir)
+						tmpDir, ok1 := repository.Checkout()
+						ok2 := repository.BuildCheckout(tmpDir)
+						if ok1 == false || ok2 == false {
+							fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
+							SendMailNotification(&repository, "")
+						}
 						break
 					}
 				}
@@ -190,8 +235,10 @@ func main() {
 	if TestLoadRepository() == false {
 		fmt.Println("TestLoadRepository failed!")
 	}
+
+	ReadConfig()
 	// Load repository information form JSON configuration files
-	repositories := LoadRepositories("repositories")
+	repositories := LoadRepositories(GlobalConfig.RepositoriesRoot)
 	// Run the watchdog loop
 	RepositoryWatchdog(repositories)
 }
