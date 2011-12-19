@@ -3,5 +3,5 @@
 	"location"    : "/home/luka/git/tarock.git",
 	"build"		  : "make",
 	"outputdirectory" : "/home/luka/Desktop/",
-	"notifyemail" : "mail@example.com"
+	"notifyemail" : "luka.napotnik@visionect.si"
 }

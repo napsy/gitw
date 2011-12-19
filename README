@@ -3,6 +3,24 @@ gitw
 --------------------
 Version 0.1
 
+
+gitw is a set of two open source tools. One (gitw) can watch over multiple GIT repositories, located locally on the host computer. When a change is made to a repository, gitw will automatically checkout and tried to build it. If the build succeeds, it will run the projects unit-tests, if any. On failures, gitw can send a notification e-mail to the repository owner. The other tool, gitw-http, is a web interface where the status of all repositories can be watched.
+
+Both of the tools are written in pure Go code so there are no external dependencies. In fact, if compiled with GC (the Go compiler from golang.org), the binaries will be static.
+
+Supported features:
+ - watch multiple GIT repositories, located locally on the host machine,
+ - notify the repository owners with an e-mail on failures,
+ - browse repository status from a web interface with access to log files (partially).
+
+Maybe in the future:
+ - support templates for the web interface,
+ - add support for other VCS (mercurial, subversion, ...),
+ - better overview of the tests,
+ - support for stability/performance tests (think valgrind) and stress tests.
+
+COMPILATION
+-----------
 Requirements:
  - Go revision >= '15b63cc10b22' (17.11.2011) from http://golang.org
  - or a Go version 1 compiler suite
@@ -13,5 +31,7 @@ $ make -f Makefile-gitw
 Compiling gitw-http
 $ make -f Makefile-gitw-http
 
-Example JSON configuration file for a repository is in 'example.json'.
+Then, edit the 'config.json' configuration file before running any of the two tools.
+
+Example JSON configuration file for a repository is in 'repositories/example.json'.
 

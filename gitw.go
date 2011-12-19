@@ -203,7 +203,7 @@ func RepositoryWatchdog(repositories []Repository) {
 	}
 	for _, repository := range repositories {
 		fmt.Printf(":: Adding repository '%s' to watchlist\n", repository.Name)
-		err = watcher.AddWatch(repository.Location + gitWatchFile, inotify.IN_MODIFY)
+		err = watcher.AddWatch(repository.Location + gitWatchFile, inotify.IN_CLOSE_WRITE)
 		if err != nil {
 			fmt.Printf("Error watching '%s': %s\n", repository.Location, err)
 			return
@@ -211,8 +211,10 @@ func RepositoryWatchdog(repositories []Repository) {
 	}
 
 	for {
+		fmt.Println("__________________")
 		select {
 			case ev := <-watcher.Event:
+				fmt.Println("tttttttttttttt")
 				for _, repository := range repositories {
 					skipIdx := strings.Index(ev.Name, gitWatchFile)
 					if repository.Location == ev.Name[:skipIdx] {
@@ -220,14 +222,16 @@ func RepositoryWatchdog(repositories []Repository) {
 						ok2 := repository.BuildCheckout(tmpDir)
 						if ok1 == false || ok2 == false {
 							fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
-							SendMailNotification(&repository, "")
+							//SendMailNotification(&repository, "")
 						}
 						break
 					}
+					fmt.Println("not found")
 				}
 			case err := <-watcher.Error:
 				fmt.Printf("Watch error: %s\n", err)
 		}
+		fmt.Println("!!!!!!!!!!!!!")
 	}
 }
 func main() {
