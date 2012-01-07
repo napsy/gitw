@@ -42,6 +42,7 @@ import (
 	"fmt"
 	"os"
 	"io/ioutil"
+    "text/template"
 )
 
 type Repository struct {
@@ -50,6 +51,7 @@ type Repository struct {
 	Build string
 	OutputDirectory string
 	NotifyEmail string
+    CheckoutSucc, BuildSucc, TestSucc bool
 }
 
 func LoadRepository(configFile string) Repository {
@@ -129,57 +131,24 @@ func ViewLog(w http.ResponseWriter, req *http.Request) {
 }
 
 func Index(w http.ResponseWriter, req *http.Request) {
-index := `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html><head><meta content="text/html; charset=UTF-8" http-equiv="content-type"><title>gitw [repository status]</title></head><body>
-<h1>Repository Status</h1>
-<table style="text-align: left; width: 639px; height: 54px;" border="1" cellpadding="2" cellspacing="2">
-  <tbody>
-    <tr>
-      <td style="vertical-align: top; font-weight: bold; width: 200px;">Name<br>
-      </td>
-      <td style="vertical-align: top; font-weight: bold; width: 100px;">Checkout<br>
-      </td>
-      <td style="vertical-align: top; font-weight: bold; width: 100px;">Build<br>
-      </td>
-      <td style="vertical-align: top; font-weight: bold; width: 100px;">Test<br>
-      </td>
-    </tr>
-`
-	repositories := LoadRepositories("repositories")
-	for _, repository := range repositories {
-
-		checkoutOutputFile := repository.Name + "-checkout-output.txt"
-		buildOutputFile := repository.Name + "-build-output.txt"
-
-		index += "<tr><td>" + repository.Name + "</td>"
-		status := AnalyzeCheckut(repository)
-		if status == false {
-			index += "<td><a href=\"viewlog/" + checkoutOutputFile + "\">failed</a></td>"
-		} else {
-			index += "<td><a href=\"viewlog/" + buildOutputFile + "\">success</a></td>"
-		}
-		status = AnalyzeBuild(repository)
-		if status == false {
-			index += "<td><a href=\"viewlog/" + checkoutOutputFile + "\">failed</a></td>"
-		} else {
-			index += "<td><a href=\"viewlog/" + buildOutputFile + "\">success</a></td>"
-		}
-		status = AnalyzeTest(repository)
-		if status == false {
-			index += "<td><a href=\"viewlog/" + checkoutOutputFile + "\">failed</a></td>"
-		} else {
-			index += "<td><a href=\"viewlog/" + buildOutputFile + "\">success</a></td>"
-		}
-		index += "</tr>"
-	}
-	index += `</tbody></table><br><hr style="width: 100%; height: 2px;">Powered by gitw<br></body></html>`
-	io.WriteString(w, index)
+    templ, err := template.ParseFiles("template.html")
+    if err != nil {
+        io.WriteString(w, err.Error())
+    } else {
+        repositories := LoadRepositories("repositories")
+        for _, repository := range repositories {
+            repository.CheckoutSucc = AnalyzeCheckut(repository)
+            repository.BuildSucc = AnalyzeBuild(repository)
+            repository.TestSucc = AnalyzeTest(repository)
+        }
+        templ.Execute(w, repositories)
+    }
 }
 
 func main() {
 	http.HandleFunc("/", Index)
 	http.HandleFunc("/viewlog/", ViewLog)
-
+    http.Handle("/static/", http.FileServer(http.Dir("static")))
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
