@@ -51,6 +51,7 @@ type Repository struct {
 	Build string
 	OutputDirectory string
 	NotifyEmail string
+  Description string
     CheckoutSucc, BuildSucc, TestSucc bool
 }
 

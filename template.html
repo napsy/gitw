@@ -1,19 +1,26 @@
 <html>
   <LINK REL=StyleSheet HREF="static/style.css" TYPE="text/css">
-  <head></head>
+  <head>
+    <style type="text/css">
+      body {
+        font-family: Monospace;
+      }
+  </style>
+  </head>
   <body>
     <h1>Repository list</h1>
-    <table>
-      <tr><td><b>Repository</b></td><td><b>Checkout</b></td><td><b>Build</b></td><td><b>Test</b></td>
+    <table border="1" bordercolor="#FFCC00" style="background-color:#FFFFCC" cellpadding="4" cellspacing="0">
+      <tr><td width="450px"><b>Repository</b></td><td width="100px"><b>Checkout</b></td><td width="100px"><b>Build</b></td><td width="100px"><b>Test</b></td>
         {{ range . }}
         <tr>
-          <td>{{ print .Name }}</td>
+          <td>{{ print .Name }} {{ if .Description }} <br><small><i>{{ .Description}}</i></small> {{ end }}</td>
           <td> <a href="viewlog/{{.Name}}-checkout">{{ if .CheckoutSucc }} success {{ else }} fail {{ end }}</a></td>
           <td> <a href="viewlog/{{.Name}}-build">{{ if .BuildSucc }} success {{ else }} fail {{ end }}</a></td>
           <td> <a href="viewlog/{{.Name}}-test">{{ if .TestSucc }} success {{ else }} fail {{ end }}</a></td>
         </tr>
         {{ end }}
-    </table>
+      </table>
+      <br>
     <hr>Powered by gitw
   </body>
 </html>
