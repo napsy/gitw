@@ -1,37 +1,173 @@
---------------------
 gitw
---------------------
-Version 0.1
+==============
 
+Why not other tools?
 
-gitw is a set of two open source tools. One (gitw) can watch over multiple GIT repositories, located locally on the host computer. When a change is made to a repository, gitw will automatically checkout and tried to build it. If the build succeeds, it will run the projects unit-tests, if any. On failures, gitw can send a notification e-mail to the repository owner. The other tool, gitw-http, is a web interface where the status of all repositories can be watched.
+minimalism: requires one JSON file per repository
+easily extensible: support for unit tests and stress-testing (long-running tests)
+Features:
 
-Both of the tools are written in pure Go code so there are no external dependencies. In fact, if compiled with GC (the Go compiler from golang.org), the binaries will be static.
-
-Supported features:
- - watch multiple GIT repositories, located locally on the host machine,
+ - watch multiple svn/git repositories, located locally on the host machine or on a remote host,
  - notify the repository owners with an e-mail on failures,
- - browse repository status from a web interface with access to log files (partially).
+ - browse repository status from a web interface with access to log files.
 
-Maybe in the future:
- - support templates for the web interface,
- - add support for other VCS (mercurial, subversion, ...),
- - better overview of the tests,
- - support for stability/performance tests (think valgrind) and stress tests.
+What's missing:
 
-COMPILATION
------------
-Requirements:
- - Go revision >= '15b63cc10b22' (17.11.2011) from http://golang.org
- - or a Go version 1 compiler suite
+ - dependency checks: for example, for Okular to work properly, NetworkManager and Gateway must run first. And there a re compiler dependencies as well
+ - support for benchmarks/stress-testing: this requires a new tool to control the stress-testing as well support in gitw-http to dinamically show the test status and system state.
+ - Setting up the Go compiler
 
-Compiling gitw:
-$ make -f Makefile-gitw
+gitw requires a Go compiler from http://golang.org. Get it with mercurial (version weekly.2012-02-07 works). There are no other external dependencies.
 
-Compiling gitw-http
-$ make -f Makefile-gitw-http
+$ hg clone -u weekly.2012-02-07 https://go.googlecode.com/hg/ go
+Then, set up your environmental variables for Go
 
-Then, edit the 'config.json' configuration file before running any of the two tools.
+export GOHOME=$HOME/go
+export GOBIN=$GOHOME/bin
+export GOARCH=amd64
+export GOOS=linux
+export PATH=$PATH:$GOBIN:$GOBIN/tool
+$ cd $GOHOME/src
+$ ./all.bash
+6g and 6l are the Go compiler and linker for 64-bit systems. Binaries are installed in $GOBIN.
 
-Example JSON configuration file for a repository is in 'repositories/example.json'.
+---------------------------------------
+Compiling and configuring gitw
+---------------------------------------
 
+Move to gitw source tree.
+
+Compiling gitw - the CI server
+---------------------------------------
+
+$ 6g gitw.go && 6l -o gitw gitw.6
+The gitw server will listen on port 9988.
+
+Compiling gitw-http - the web interface
+
+$ 6g gitw-http.go && 6l -o gitw-http gitw-http.6
+Edit config.json:
+
+{
+    "RepositoriesRoot" : "repositories",
+    "MailAddress"      : "some@example.com",
+    "MailHost"         : "smtp.example.com",
+    "MailUsername"     : "some@example.com",
+    "MailPassword"     : "mypassword"
+}
+Key explanations:
+
+RepositoriesRoot: the directory where the repositories JSON files are stored,
+MailAddress: email to use for sending out notifications,
+MailHost: email server hostname,
+MailUsername: username for the email,
+MailPassword: email password.
+The gitw-http HTTP server will listen on port 12345
+
+Adding repositories
+
+Example repository for Koala Okular:
+
+{
+    "repository"      : "svn",
+    "source"          : "remote",
+    "name"            : "example",
+    "location"        : "https://localhost/svn/example",
+    "build"           : "make",
+    "test"            : "/some/path/run.sh",
+    "outputdirectory" : "/some/path/",
+    "notifyemail"     : "my.exmail@example.com",
+    "description"     : "Build Example and then run unit tests, then a long test"
+}
+
+Key explanations:
+
+ - repository: either svn or git,
+ - source: remote or local,
+ - name: name of the repository,
+ - location: if source is set to local, enter a valid local path to repository, or an URL if source is remote,
+ - build: the command to execute after code checkout is done,
+ - test: the command to execute after build is done,
+ - outputdirectory: path where to out output files for checkout, build and test. The filename is composed of {name}-{checkout|build|test}-output.txt
+ - notifyemail - the email to use when sending fail notices or an empty string for no notifications
+ - description - a short description of the repository, mainly used by gitw-http.
+
+
+Configuring Subversion for gitw
+----------------------------------
+
+Using gitw (https://github.com/napsy/gitw), automated testing could be done:
+
+Navigate to your repository's hooks directory. This is almost always a directory cleverly named 'hooks' right inside the top level of your repository:
+
+cd /Users/mwest/svn/my_repository/hooks/
+
+Create a new file called post-commit, and make it executable by the www user.
+touch ./post-commit
+chmod 755 ./post-commit
+
+Add
+
+#!/usr/bin/env python
+
+
+import sys
+import subprocess
+import telnetlib
+from xml.dom.minidom import parseString
+
+#if sys.argv[1] != "TEST":
+#    exit(0)
+GITW_HOST = "192.168.101.196"
+GITW_PORT = 9988
+
+# This is a post-commit script for subversion to send a proper string
+# to a gitw server. The server will then begin to checkout, build and
+# test the newest commit of the project.
+
+# Command line arguments for post-commit script:
+# argv[1] - repository name
+# argv[2] - revision number
+
+svnStdout = ""
+cmd = 'svn log -v -r "%s" file:///data/svn/ --xml' % sys.argv[2]
+try:
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    return_code = proc.wait()
+    stderr = proc.stderr.read()
+    if len(stderr) > 1:
+	sys.stderr.write(stderr)
+        exit(-2)
+    svnStdout = proc.stdout.read()
+except Exception,e:
+    sys.stderr.write("Error executing svn log: " + str(e) + "\n")
+    exit(-4)
+else:
+    dom = parseString(svnStdout)
+    tags = dom.getElementsByTagName('paths')
+    msg = dom.getElementsByTagName('msg')[0].childNodes[0].nodeValue
+    project = ""
+
+    if len(tags) < 1:
+        print "No tags found"
+        exit(0)
+
+    for child in tags[0].childNodes:
+	if child.nodeName != 'path':
+            continue
+        project = child.childNodes[0].nodeValue
+
+    # remove filename
+    idx = project.rindex("/")
+    project = project[:idx]
+    print "Building gitw project '%s'" % project
+    try:
+        message = str(project + "|" + sys.argv[2] + "|" + msg + "\r\n")
+        client = telnetlib.Telnet(GITW_HOST, GITW_PORT)
+        client.write(message)
+        client.close()
+    except Exception, e:
+        sys.stderr.write("Error communicating with gitw server: " + str(e) + "\n")
+        exit(0)
+
+to post-commit file.
