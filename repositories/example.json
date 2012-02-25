@@ -1,8 +1,15 @@
 {
-	"name"	      : "testing",
-	"location"    : "/home/luka/git/tarock.git",
-	"build"		  : "make",
-	"outputdirectory" : "/home/luka/Desktop/",
-	"notifyemail" : "luka.napotnik@visionect.si",
-  "description" : "An example repository"
+    "Repository"  : "svn",
+    "Source"      : "remote",
+	"Name"	      : "example-repository",
+	"Location"    : "https://localhost/svn/example",
+	"Build"		  : "make",
+    "Test"        : "/some/path/run.sh",
+    "LongTest"    : {
+        "Executable" : "example",
+        "FollowChildren" : "false" 
+    },
+	"OutputDirectory" : "/some/path/",
+	"NotifyEmail" : "myemail@example.com",
+    "Description" : "Build Example, run unit tests, then a stress-test"
 }

@@ -1,0 +1,156 @@
+<html>
+  <LINK REL=StyleSheet HREF="static/style.css" TYPE="text/css">
+  <head>
+    <title>gitw-http</title>
+    <style type="text/css">
+      body {
+        font-family: Monospace;
+      }
+  </style>
+  <script src="http://code.jquery.com/jquery-latest.js"></script>
+<script type="text/javascript" src="http://localhost:12346/cv_graph.js"></script>
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.core.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.context.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.annotate.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.tooltips.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.zoom.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.effects.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.key.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.line.js" ></script>
+    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.key.js" ></script>
+
+  <script type="text/javascript">
+    var ramUsage = 0
+    var ramHistory = []
+    d1 = [];
+    d2 = [];
+    // Pre-pad the arrays with 250 null values
+    for (var i=0; i< 250; ++i) {
+        d1.push(null);
+        ramHistory.push(null)
+    }
+window.onload = function() {
+
+    setInterval ( "updateData()", 1000)
+/*
+	g_graph = new Graph(
+	{
+		'id': "firstgraph",
+		'strokeStyle': "#819C58",
+		'fillStyle': "rgba(64,128,0,0.25)",
+		'call': function(){return (ramUsage) }
+	});
+*/
+    drawGraph();
+    drawMemGraph();
+}
+
+      function updateData() {
+          $.getJSON("http://localhost:12345/getlongtest/{{ .Name }}",
+          function(data){
+              $("#cpu").text(data["CpuUsage"]);
+              $("#mem").text(data["MemoryUsage"]);
+              $("#lsof").text(data["OpenFiles"]);
+              $("#memhistory").text(data["MemoryHistory"]);
+            ramUsage = parseInt(data["CpuUsage"], 10)
+        
+            tmp = data["MemoryHistory"]
+            ramHistory = []
+            for (var i = 0; i < tmp.length; i++) {
+                ramHistory.push(parseInt(tmp[i], 10))
+            } 
+
+          });
+      }
+
+
+    function getGraph(id, d1)
+    {
+        var graph = new RGraph.Line(id, d1);
+        graph.Set('chart.background.barcolor1', 'white');
+        graph.Set('chart.background.barcolor2', 'white');
+        graph.Set('chart.title.xaxis', 'Time');
+        graph.Set('chart.filled', false);
+        graph.Set('chart.fillstyle', ['#daf1fa', '#faa']);
+        graph.Set('chart.colors', ['rgb(169, 222, 244)', 'red']);
+        graph.Set('chart.linewidth', 2);
+        graph.Set('chart.ymax', 100);
+        graph.Set('chart.xticks', 50);
+
+        return graph;
+    }
+    function getMemGraph(id, arr)
+    {
+        var graph = new RGraph.Line(id, arr);
+        graph.Set('chart.background.barcolor1', 'white');
+        graph.Set('chart.background.barcolor2', 'white');
+        graph.Set('chart.title.xaxis', 'Time');
+        graph.Set('chart.filled', true);
+        graph.Set('chart.fillstyle', ['#daf1fa', '#faa']);
+        graph.Set('chart.colors', ['rgb(169, 222, 244)', 'red']);
+        graph.Set('chart.linewidth', 2);
+        //graph.Set('chart.ymax', 20);
+        graph.Set('chart.xticks', 25);
+
+        return graph;
+    }
+    
+    function drawGraph (e)
+    {
+        // Clear the canvas and redraw the chart
+        RGraph.Clear(document.getElementById("cvs"));
+        var graph = getGraph('cvs', d1);
+        graph.Draw();
+        
+        // Add some data to the data arrays
+        d1.push(ramUsage);
+        //d2.push(RGraph.random(5, 10));
+        
+        // Get rid of the first values of the arrays
+        if (d1.length > 250) {
+            d1 = RGraph.array_shift(d1);
+            //d2 = RGraph.array_shift(d2);
+        }
+
+        setTimeout(drawGraph,50);
+    }
+    function drawMemGraph (e)
+    {
+        // Clear the canvas and redraw the chart
+        RGraph.Clear(document.getElementById("cvs1"));
+        var memgraph = getMemGraph('cvs1', ramHistory);
+        memgraph.Draw();
+        setTimeout(drawMemGraph,200);
+    }
+</script>
+  </head>
+  <body>
+    <h1>System status snapshot for {{ .Name }}</h1>
+    <p><a href="/">Index</a></p>
+    <table border="0" bordercolor="#000000" style="background-color:#FFFFFF" cellpadding="2" cellspacing="2">
+        <tr>
+          <td width="300px">CPU utilization</a></td>
+          <td width="100px"><span id="cpu"></span>%</td>
+        </tr>
+        <tr>
+          <td>Memory usage - RSS </a></td>
+          <td width="100px"><span id="mem"></span> KiB</td>
+        </tr>
+        <tr>
+          <td>Open files</a></td>
+          <td width="100px"><span id="lsof"></span></td>
+        </tr>
+        <tr><td>
+<br>CPU usage (%):<br>
+<canvas id="cvs" width="400" height="150">[No canvas support]</canvas>
+</td><td>
+<br>Memory history (KiB)<br>
+<canvas id="cvs1" width="400" height="150">[No canvas support]</canvas>
+</td>
+</tr>
+      </table>
+    <hr>Powered by gitw
+  </body>
+</html>
