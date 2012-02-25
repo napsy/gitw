@@ -1,6 +1,7 @@
 <html>
   <LINK REL=StyleSheet HREF="static/style.css" TYPE="text/css">
   <head>
+    <title>gitw-http</title>
     <style type="text/css">
       body {
         font-family: Monospace;
@@ -9,14 +10,25 @@
   </head>
   <body>
     <h1>Repository list</h1>
-    <table border="1" bordercolor="#FFCC00" style="background-color:#FFFFCC" cellpadding="4" cellspacing="0">
-      <tr><td width="450px"><b>Repository</b></td><td width="100px"><b>Checkout</b></td><td width="100px"><b>Build</b></td><td width="100px"><b>Test</b></td>
+    <table border="1" bordercolor="#000000" style="background-color:#FFFFFF" cellpadding="1" cellspacing="0">
+      <tr><td width="250px"><b>Repository</b></td><td width="100px"><b>Checkout</b></td><td width="100px"><b>Build</b></td><td width="100px"><b>Test</b></td><td width="100px"><b>Long test</b></td><td width="50%"><b>Commit message</b></td>
+
         {{ range . }}
         <tr>
-          <td>{{ print .Name }} {{ if .Description }} <br><small><i>{{ .Description}}</i></small> {{ end }}</td>
-          <td> <a href="viewlog/{{.Name}}-checkout">{{ if .CheckoutSucc }} success {{ else }} fail {{ end }}</a></td>
-          <td> <a href="viewlog/{{.Name}}-build">{{ if .BuildSucc }} success {{ else }} fail {{ end }}</a></td>
-          <td> <a href="viewlog/{{.Name}}-test">{{ if .TestSucc }} success {{ else }} fail {{ end }}</a></td>
+          <td>{{ print .Name }} {{ if .Description }} <br><small><i>{{ print .Description }}</i></small> {{ end }}</td>
+          {{ if .Touched }}
+          <td> <a href="viewlog/{{.Name}}/checkout">{{ if .CheckoutSucc }} success {{ else }} fail {{ end }}</a></td>
+          <td> <a href="viewlog/{{.Name}}/build">{{ if .BuildSucc }} success {{ else }} fail {{ end }}</a></td>
+          <td> <a href="viewlog/{{.Name}}/test">{{ if .TestSucc }} success {{ else }} fail {{ end }}</a></td>
+          <td> {{ if .LongTestRunning }} <a href="longrun/{{.Name}}">ongoing</a> {{ else }} not running {{ end }} </td>
+          <td><small>[rev. {{ print .CommitNumber }}]</small> {{ print .CommitMessage }}</td>
+          {{ else }}
+          <td>n/a</td>
+          <td>n/a</td>
+          <td>n/a</td>
+          <td>n/a</td>
+          <td> {{ if .LongTestRunning }} <a href="longrun/{{.Name}}">ongoing</a> {{ else }} not running {{ end }} </td>
+          {{ end }}
         </tr>
         {{ end }}
       </table>

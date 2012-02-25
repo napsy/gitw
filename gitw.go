@@ -40,43 +40,66 @@ import (
 	"os/exec"
 	"io/ioutil"
 	"fmt"
-	"encoding/gob"
-	"net/smtp"
-	"strings"
-	"exp/inotify"
+    "encoding/gob"
+    "net/smtp"
+    "strings"
+    "exp/inotify"
+    "net"
 )
 
 type Config struct {
-	RepositoriesRoot string
-	MailAddress string
-	MailHost string
-	MailUsername string
-	MailPassword string
+    RepositoriesRoot    string
+    MailAddress         string
+    MailHost            string
+    MailUsername        string
+    MailPassword        string
 }
 
 var GlobalConfig Config
 
 type Repository struct {
-	Name string
-	Location string
-	Build string
-	OutputDirectory string
-	NotifyEmail string
+    Repository      string
+    Source          string
+    Name            string
+    Location        string
+    Build           string
+    Test            string
+    OutputDirectory string
+    NotifyEmail     string
+    Filename        string
 }
 
-func (repository Repository) Checkout() (string, bool) {
-	ok := true
-	status := []byte("succ\n\n")
-	tmpDir, _ := ioutil.TempDir(os.TempDir(), ".gitw-checkout-")
-	fmt.Printf(":: Checking out '%s' in %s\n", repository.Name, tmpDir)
+var cwd string
+func (repository Repository) Checkout(revision, message string) (string, bool) {
+    var cmd *exec.Cmd
+    ok := true
+    tmpDir, _ := ioutil.TempDir(os.TempDir(), ".gitw-checkout-")
+    fmt.Printf(":: Checking out '%s' in %s\n", repository.Name, tmpDir)
 
-	cmd := exec.Command("git", "clone", repository.Location, tmpDir)
-	output, err := cmd.CombinedOutput()
+    switch repository.Repository {
+    case "git":
+        cmd = exec.Command("git", "clone", repository.Location, tmpDir)
+    case "svn":
+        cmd = exec.Command("svn", "checkout", repository.Location, tmpDir)
+    default:
+        fmt.Printf("Unknown repository type '%s'.\n", repository.Repository);
+        return "", false
+    }
+
+    header := fmt.Sprintf("%s|%s\n", revision, message)
+    status := []byte{}
+
+    output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("Erorr running git: %s\n", err)
-		status = []byte("fail\n\n")
 		ok = false
 	}
+    if ok {
+	    status = append(status, []byte("succ\n\n")...)
+    } else {
+	    status = append(status, []byte("fail\n\n")...)
+    }
+	status = append(status, []byte(header)...)
 	status = append(status, output...)
 	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-checkout-output.txt", status, 0644)
 	if err != nil {
@@ -89,6 +112,7 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
 	ok := true
 	fmt.Printf(":: Building '%s'\n", repository.Name)
 	status := []byte("succ\n\n")
+    os.Chdir(tmpDir)
 	cmd := exec.Command(repository.Build)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -99,6 +123,59 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
 	status = append(status, output...)
 
 	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-build-output.txt", status, 0644)
+	if err != nil {
+		fmt.Printf("Error writing checkout output to file: %s\n", err)
+	}
+	return ok
+}
+
+func (repository Repository) RunTest(tmpDir string) bool {
+    if len(repository.Test) < 1 {
+        return true
+    }
+	ok := true
+	fmt.Printf(":: Running tests for '%s'\n", repository.Name)
+	status := []byte("succ\n\n")
+    os.Chdir(tmpDir)
+	cmd := exec.Command(repository.Test, tmpDir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Erorr running %s: %s\n", repository.Test, err)
+		status = []byte("fail\n\n")
+		ok = false
+	}
+    //fmt.Println(string(output))
+	status = append(status, output...)
+
+	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-test-output.txt", status, 0644)
+	if err != nil {
+		fmt.Printf("Error writing checkout output to file: %s\n", err)
+	}
+	return ok
+}
+
+func (repository Repository) RunLongTest(tmpDir string) bool {
+    if len(repository.Test) < 1 {
+        return true
+    }
+	ok := true
+	fmt.Printf(":: Running long tests for '%s'\n", repository.Name)
+	status := []byte("succ\n\n")
+    os.Chdir(cwd)
+
+
+    fmt.Printf("Repository filename: %s, tmpDir: %s\n", repository.Filename, tmpDir)
+	cmd := exec.Command(cwd + "/gitw-test", repository.Filename, tmpDir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Erorr running gitw-test tool: %s\n", err.Error())
+		status = []byte("fail\n\n")
+		ok = false
+	}
+    fmt.Println(string(output))
+	status = append(status, output...)
+
+	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-gitw-longtest-output.txt", status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
@@ -126,7 +203,7 @@ func ReadConfig() {
 
 	e := decoder.Decode(&GlobalConfig)
 	if e != nil {
-		fmt.Printf("Error decoding gitw configuration from file: %s\n", e)
+        fmt.Printf("ReadConfig: error decoding gitw configuration from file: %s\n", e)
 	}
 }
 
@@ -139,7 +216,7 @@ func LoadRepository(configFile string) Repository {
 	repo := Repository{}
 	e := decoder.Decode(&repo)
 	if e != nil {
-		fmt.Printf("Error decoding repository configuration from file: %s\n", e)
+        fmt.Printf("LoadRepository: error decoding repository configuration from file: %s\n", e)
 	}
 	return repo
 }
@@ -170,6 +247,7 @@ func LoadRepositories(configDir string) []Repository {
 			continue
 		}
 		repository := LoadRepository(string(fileCtx))
+        repository.Filename = configDir + "/" + file.Name()
 		repositories = append(repositories, repository)
 	}
 	return repositories
@@ -179,14 +257,18 @@ func LoadRepositories(configDir string) []Repository {
 func TestLoadRepository() bool {
 sampleConfig := `
 {
+    "repository": "git",
+    "source"    : "local",
 	"name"		: "testing",
 	"location"	: "/home/luka/git/tarock.git",
 	"build"		: "gomake",
+    "test"      : "test.sh",
 	"outputdirectory" : "/home/luka/gitw/",
-	"notifyemail" : "joe@example.com"
+	"notifyemail" : "joe@example.com",
+    "FileName"  : "filename"
 }
 	`
-	expectedRepository := Repository{"testing", "/home/luka/git/tarock.git", "gomake", "/home/luka/gitw/", "joe@example.com"}
+    expectedRepository := Repository{"git", "local", "testing", "/home/luka/git/tarock.git", "gomake", "test.sh", "/home/luka/gitw/", "joe@example.com", "filename"}
 	repository := LoadRepository(sampleConfig)
 	if repository != expectedRepository {
 		return false
@@ -202,6 +284,9 @@ func RepositoryWatchdog(repositories []Repository) {
 		return
 	}
 	for _, repository := range repositories {
+        if repository.Source == "remote" {
+            continue
+        }
 		fmt.Printf(":: Adding repository '%s' to watchlist\n", repository.Name)
 		err = watcher.AddWatch(repository.Location + gitWatchFile, inotify.IN_CLOSE_WRITE)
 		if err != nil {
@@ -211,14 +296,12 @@ func RepositoryWatchdog(repositories []Repository) {
 	}
 
 	for {
-		fmt.Println("__________________")
 		select {
 			case ev := <-watcher.Event:
-				fmt.Println("tttttttttttttt")
 				for _, repository := range repositories {
 					skipIdx := strings.Index(ev.Name, gitWatchFile)
 					if repository.Location == ev.Name[:skipIdx] {
-						tmpDir, ok1 := repository.Checkout()
+						tmpDir, ok1 := repository.Checkout("0", "")
 						ok2 := repository.BuildCheckout(tmpDir)
 						if ok1 == false || ok2 == false {
 							fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
@@ -226,15 +309,77 @@ func RepositoryWatchdog(repositories []Repository) {
 						}
 						break
 					}
-					fmt.Println("not found")
 				}
 			case err := <-watcher.Error:
 				fmt.Printf("Watch error: %s\n", err)
 		}
-		fmt.Println("!!!!!!!!!!!!!")
 	}
 }
+
+func RemoteRepositoryWatchdog(repositories []Repository) {
+    netlisten, err := net.Listen("tcp", "192.168.101.196:9988")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer netlisten.Close()
+
+    for {
+        conn, err := netlisten.Accept()
+        if err != nil {
+            panic(err.Error())
+        }
+        bytes := make([]byte, 1024)
+        conn.Read(bytes)
+        line := string(bytes)
+        idx := strings.IndexRune(line, '\r')
+        if idx != -1 {
+            line = line[:idx]
+        }
+        tokens := strings.Split(line, "|")
+        if len(tokens) < 3 {
+            fmt.Printf(":: Invalid line from client '%s', skipping ...", line)
+            continue
+        }
+        r, rev, msg := tokens[0], tokens[1], tokens[2]
+        found := false
+        for _, repository := range repositories {
+            if strings.Index(repository.Location, r) != -1 {
+                ok3 := true
+                tmpDir, ok1 := repository.Checkout(rev, msg)
+                ok2 := repository.BuildCheckout(tmpDir)
+                if len(repository.Test) > 0 {
+                    ok3 = repository.RunTest(tmpDir)
+                }
+                if ok1 == false || ok2 == false || ok3 == false {
+                    fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
+                    //SendMailNotification(&repository, "")
+                }
+
+                go repository.RunLongTest(tmpDir)
+                /*
+                } else {
+                    err := os.RemoveAll(tmpDir)
+                    if err != nil {
+                        fmt.Printf(":: Error removing temporary directory '%s'\n", tmpDir)
+                    }
+                }
+                */
+                // Remove the temporary directory
+
+                fmt.Printf(":: Done with '%s'\n", repository.Name)
+                found = true
+                break
+            }
+        }
+        if found != true {
+            fmt.Printf("NOTE: repository '%s' was not found.\n", r);
+        }
+        conn.Close()
+    }
+}
+
 func main() {
+    cwd, _ = os.Getwd()
 	// Some self-tests
 	if TestLoadRepository() == false {
 		fmt.Println("TestLoadRepository failed!")
@@ -244,5 +389,6 @@ func main() {
 	// Load repository information form JSON configuration files
 	repositories := LoadRepositories(GlobalConfig.RepositoriesRoot)
 	// Run the watchdog loop
+    go RemoteRepositoryWatchdog(repositories);
 	RepositoryWatchdog(repositories)
 }

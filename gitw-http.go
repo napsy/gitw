@@ -29,7 +29,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 package main
 
 import (
@@ -38,26 +38,50 @@ import (
 	"log"
 	"encoding/gob"
 	"strings"
+    "strconv"
 	"encoding/json"
 	"fmt"
 	"os"
 	"io/ioutil"
     "text/template"
+    "html"
 )
 
+type LongTestConfig struct {
+    Executable      string
+    FollowChildren  string
+}
+
 type Repository struct {
-	Name string
-	Location string
-	Build string
-	OutputDirectory string
-	NotifyEmail string
-  Description string
-    CheckoutSucc, BuildSucc, TestSucc bool
+    Repository      string
+    Source          string
+    Name            string
+    Location        string
+    Build           string
+    Test            string
+    LongTest        LongTestConfig
+    OutputDirectory string
+    NotifyEmail     string
+    CommitMessage   string
+    Description     string
+    CommitNumber    int
+    CheckoutSucc    bool
+    BuildSucc       bool
+    TestSucc        bool
+    Touched         bool
+    LongTestRunning bool
+}
+
+type SystemSnapshot struct {
+    Name        string
+    Pid         int
+    CpuUsage    int
+    MemoryUsage int
+    OpenFiles   int
 }
 
 func LoadRepository(configFile string) Repository {
 
-	gob.Register(&Repository{})
 	r := strings.NewReader(configFile)
 	decoder := json.NewDecoder(r)
 
@@ -69,7 +93,27 @@ func LoadRepository(configFile string) Repository {
 	return repo
 }
 
+func LoadSystemSnapshot(fileName string) *SystemSnapshot {
+	gob.Register(&SystemSnapshot{})
+
+    snapshotText, err := ioutil.ReadFile(fileName)
+    if err != nil {
+        fmt.Printf("Unable to open system snapshot output file: %s\n", err.Error())
+        return nil
+    }
+	r := strings.NewReader(string(snapshotText))
+	decoder := json.NewDecoder(r)
+
+	snapshot := SystemSnapshot{}
+	e := decoder.Decode(&snapshot)
+	if e != nil {
+		fmt.Printf("Error decoding repository configuration from file: %s\n", e)
+	}
+	return &snapshot
+}
+
 func LoadRepositories(configDir string) []Repository {
+	gob.Register(&Repository{})
 	repositories := make([]Repository, 0)
 
 	if configDir[0] != '/' { // have relative path
@@ -101,55 +145,218 @@ func LoadRepositories(configDir string) []Repository {
 }
 
 
-func AnalyzeCheckut(repository Repository) bool {
-	out, err := ioutil.ReadFile(repository.Name + "-checkout-output.txt")
+func (repository *Repository) AnalyzeCheckut() bool  {
+	out, err := ioutil.ReadFile(repository.OutputDirectory + "/" + repository.Name + "-checkout-output.txt")
+
 	if err != nil {
+        fmt.Printf(":: Error opening checkout output for '%s': %s\n", repository.Name, err.Error())
+        repository.CheckoutSucc = false
 		return false
 	}
-	if strings.Index(string(out), "succ") == 0 {
+    out_str := string(out)
+    line_n := 0
+    line := []byte{}
+    for _, ch := range(out_str) {
+
+        ch_int := int(ch)
+        if ch_int == 0 {
+            continue
+        }
+        if ch_int == 10 || ch_int == 13 {
+            line_n++
+            if line_n == 3 {
+                break
+            }
+            line = []byte{}
+        }
+        line = append(line, byte(ch))
+    }
+    tokens := strings.Split(string(line), "|")
+    if len(tokens) >= 2 {
+        repository.CommitNumber, err = strconv.Atoi(tokens[0][1:len(tokens[0])])
+        if err != nil {
+            fmt.Printf(":: NOTE - error reading comit number: %s\n", err.Error())
+        }
+        repository.CommitMessage = tokens[1]
+    }
+	if strings.Index(out_str, "succ") == 0 {
+        repository.CheckoutSucc = true
 		return true
 	}
+    repository.CheckoutSucc = false
 	return false
 }
 
-func AnalyzeBuild(repository Repository) bool {
-	out, err := ioutil.ReadFile(repository.Name + "-buildt-output.txt")
+func (repository *Repository) AnalyzeBuild() bool {
+	out, err := ioutil.ReadFile(repository.OutputDirectory + "/" + repository.Name + "-build-output.txt")
 	if err != nil {
+        fmt.Printf(":: Error opening build output for '%s': %s\n", repository.Name, err.Error())
+        repository.BuildSucc = false
 		return false
 	}
 	if strings.Index(string(out), "succ") == 0 {
+        repository.BuildSucc = true
 		return true
 	}
+    repository.BuildSucc = false
 	return false
 }
 
-func AnalyzeTest(repository Repository) bool {
-	return false
+func (repository *Repository) AnalyzeTest() bool {
+	out, err := ioutil.ReadFile(repository.OutputDirectory + "/" + repository.Name + "-test-output.txt")
+	if err != nil {
+        fmt.Printf(":: Error opening build output for '%s': %s\n", repository.Name, err.Error())
+        repository.TestSucc = false
+		return false
+	}
+	if strings.Index(string(out), "succ") == 0 {
+        repository.TestSucc = true
+		return true
+	}
+    repository.TestSucc = false
+    return false
+}
+
+func (repository *Repository) WasTouched() bool {
+    logFilename := fmt.Sprintf("%s/%s-checkout-output.txt", repository.OutputDirectory, repository.Name)
+    _, err := os.Stat(logFilename)
+    if err != nil {
+        return false
+    }
+    repository.Touched = true
+    return true
 }
 
 func ViewLog(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, req.URL.RawQuery)
+    // how to get url arguments:
+    //fmt.Fprintf(w, "Hello, %q", html.EscapeString(req.URL.RawQuery))
+    path := strings.SplitN(html.EscapeString(req.URL.Path[1:]), "/", 3)
+    if len(path) < 3 {
+        fmt.Fprintf(w, "Invalid url")
+        return
+    }
+
+    name, log := path[1], path[2]
+    if log != "build" && log != "checkout" && log != "test" {
+        fmt.Fprintf(w, "Log not valid, must be either build, checkout or test")
+        return
+    }
+    found := false
+    log_filename := ""
+    fmt.Printf("Showing %s for repository %s\n", log, name)
+    repositories := LoadRepositories("repositories")
+    for _, repository := range repositories {
+        if repository.Name == name {
+            log_filename = fmt.Sprintf("%s/%s-%s-output.txt", repository.OutputDirectory, repository.Name, log)
+            found = true
+            break
+        }
+    }
+    if !found {
+        fmt.Fprintf(w, "Invalid repository '%s'", name)
+        return
+    }
+    log_file, err := ioutil.ReadFile(log_filename)
+    if err != nil {
+        fmt.Fprintf(w, "Error opening log file: %s", err.Error())
+    }
+    out := fmt.Sprintf("%s", string(log_file))
+    io.WriteString(w, out)
 }
 
+func ViewLongRun(w http.ResponseWriter, req *http.Request) {
+    path := strings.SplitN(html.EscapeString(req.URL.Path[1:]), "/", 3)
+    if len(path) != 2 {
+        fmt.Fprintf(w, "Invalid url")
+        return
+    }
+
+    name := path[1]
+    found := false
+    log_filename := ""
+    repositories := LoadRepositories("repositories")
+    for _, repository := range repositories {
+        if repository.Name == name {
+            log_filename = fmt.Sprintf("%s/%s-system-output.txt", repository.OutputDirectory, repository.Name)
+            found = true
+            break
+        }
+    }
+    if !found {
+        fmt.Fprintf(w, "Invalid repository '%s'", name)
+        return
+    }
+    /*
+    log_file, err := ioutil.ReadFile(log_filename)
+    if err != nil {
+        fmt.Fprintf(w, "Error opening log file: %s", err.Error())
+    }
+    */
+    snapshot := LoadSystemSnapshot(log_filename)
+    templ, err := template.ParseFiles("template-longrun.html")
+    if err != nil {
+        io.WriteString(w, err.Error())
+    } else {
+        templ.Execute(w, snapshot)
+    }
+}
+
+func GetLongTest(w http.ResponseWriter, req *http.Request) {
+    path := strings.SplitN(html.EscapeString(req.URL.Path[1:]), "/", 3)
+    if len(path) != 2 {
+        fmt.Fprintf(w, "Invalid url")
+        return
+    }
+
+    name := path[1]
+    found := false
+    log_filename := ""
+    repositories := LoadRepositories("repositories")
+    for _, repository := range repositories {
+        if repository.Name == name {
+            log_filename = fmt.Sprintf("%s/%s-system-output.txt", repository.OutputDirectory, repository.Name)
+            found = true
+            break
+        }
+    }
+    if !found {
+        fmt.Fprintf(w, "Invalid repository '%s'", name)
+        return
+    }
+    log_file, err := ioutil.ReadFile(log_filename)
+    if err != nil {
+        fmt.Fprintf(w, "Error opening log file: %s", err.Error())
+    }
+    io.WriteString(w, string(log_file))
+}
 func Index(w http.ResponseWriter, req *http.Request) {
+
     templ, err := template.ParseFiles("template.html")
     if err != nil {
         io.WriteString(w, err.Error())
     } else {
         repositories := LoadRepositories("repositories")
-        for _, repository := range repositories {
-            repository.CheckoutSucc = AnalyzeCheckut(repository)
-            repository.BuildSucc = AnalyzeBuild(repository)
-            repository.TestSucc = AnalyzeTest(repository)
+        for i := 0; i < len(repositories); i++ {
+            if repositories[i].WasTouched() {
+                repositories[i].AnalyzeCheckut()
+                repositories[i].AnalyzeBuild()
+                repositories[i].AnalyzeTest()
+                repositories[i].LongTestRunning = true
+            }
         }
-        templ.Execute(w, repositories)
+        templ.Execute(w, &repositories)
     }
 }
 
 func main() {
 	http.HandleFunc("/", Index)
 	http.HandleFunc("/viewlog/", ViewLog)
-    http.Handle("/static/", http.FileServer(http.Dir("static")))
+	http.HandleFunc("/longrun/", ViewLongRun)
+	http.HandleFunc("/getlongtest/", GetLongTest)
+
+    // serve static files on port 12346
+    go http.ListenAndServe(":12346", http.FileServer(http.Dir("static")))
+    // and the web interface on port 12345
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
