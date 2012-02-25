@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+
+import sys
+import subprocess
+import telnetlib
+from xml.dom.minidom import parseString
+
+#if sys.argv[1] != "TEST":
+#    exit(0)
+GITW_HOST = "192.168.101.196"
+GITW_PORT = 9988
+
+# This is a post-commit script for subversion to send a proper string
+# to a gitw server. The server will then begin to checkout, build and
+# test the newest commit of the project.
+
+# Command line arguments for post-commit script:
+# argv[1] - repository name
+# argv[2] - revision number
+
+svnStdout = ""
+cmd = 'svn log -v -r "%s" file:///data/svn/ --xml' % sys.argv[2]
+try:
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    return_code = proc.wait()
+    stderr = proc.stderr.read()
+    if len(stderr) > 1:
+	sys.stderr.write(stderr)
+        exit(-2)
+    svnStdout = proc.stdout.read()
+except Exception,e:
+    sys.stderr.write("Error executing svn log: " + str(e) + "\n")
+    exit(-4)
+else:
+    dom = parseString(svnStdout)
+    tags = dom.getElementsByTagName('paths')
+    msg = dom.getElementsByTagName('msg')[0].childNodes[0].nodeValue
+    project = ""
+
+    if len(tags) < 1:
+        print "No tags found"
+        exit(0)
+
+    for child in tags[0].childNodes:
+	if child.nodeName != 'path':
+            continue
+        project = child.childNodes[0].nodeValue
+
+    # remove filename
+    idx = project.rindex("/")
+    project = project[:idx]
+    print "Building gitw project '%s'" % project
+    try:
+        message = str(project + "|" + sys.argv[2] + "|" + msg + "\r\n")
+        client = telnetlib.Telnet(GITW_HOST, GITW_PORT)
+        client.write(message)
+        client.close()
+    except Exception, e:
+        sys.stderr.write("Error communicating with gitw server: " + str(e) + "\n")
+        exit(0)

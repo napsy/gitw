@@ -13,7 +13,7 @@ Features:
 
 What's missing:
 
- - dependency checks: for example, for Okular to work properly, NetworkManager and Gateway must run first. And there a re compiler dependencies as well
+ - dependency checks
  - support for benchmarks/stress-testing: this requires a new tool to control the stress-testing as well support in gitw-http to dinamically show the test status and system state.
  - Setting up the Go compiler
 
@@ -57,12 +57,12 @@ Edit config.json:
 }
 Key explanations:
 
-RepositoriesRoot: the directory where the repositories JSON files are stored,
-MailAddress: email to use for sending out notifications,
-MailHost: email server hostname,
-MailUsername: username for the email,
-MailPassword: email password.
-The gitw-http HTTP server will listen on port 12345
+ - RepositoriesRoot: the directory where the repositories JSON files are stored,
+ - MailAddress: email to use for sending out notifications,
+ - MailHost: email server hostname,
+ - MailUsername: username for the email,
+ - MailPassword: email password.
+ - The gitw-http HTTP server will listen on port 12345
 
 Adding repositories
 
@@ -102,72 +102,7 @@ Navigate to your repository's hooks directory. This is almost always a directory
 
 cd /Users/mwest/svn/my_repository/hooks/
 
-Create a new file called post-commit, and make it executable by the www user.
-touch ./post-commit
-chmod 755 ./post-commit
-
-Add
-
-#!/usr/bin/env python
+Use the subversion-post-commit.example file (located in repository) for the post-commit script. The script will notify the gitw server whenever a commit will occur on the SVN server. Rename the file to 'post-commit' after putting it into the 'hooks' directory.
+Make sure the file is executable and owned by the right user.
 
 
-import sys
-import subprocess
-import telnetlib
-from xml.dom.minidom import parseString
-
-#if sys.argv[1] != "TEST":
-#    exit(0)
-GITW_HOST = "192.168.101.196"
-GITW_PORT = 9988
-
-# This is a post-commit script for subversion to send a proper string
-# to a gitw server. The server will then begin to checkout, build and
-# test the newest commit of the project.
-
-# Command line arguments for post-commit script:
-# argv[1] - repository name
-# argv[2] - revision number
-
-svnStdout = ""
-cmd = 'svn log -v -r "%s" file:///data/svn/ --xml' % sys.argv[2]
-try:
-    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    return_code = proc.wait()
-    stderr = proc.stderr.read()
-    if len(stderr) > 1:
-	sys.stderr.write(stderr)
-        exit(-2)
-    svnStdout = proc.stdout.read()
-except Exception,e:
-    sys.stderr.write("Error executing svn log: " + str(e) + "\n")
-    exit(-4)
-else:
-    dom = parseString(svnStdout)
-    tags = dom.getElementsByTagName('paths')
-    msg = dom.getElementsByTagName('msg')[0].childNodes[0].nodeValue
-    project = ""
-
-    if len(tags) < 1:
-        print "No tags found"
-        exit(0)
-
-    for child in tags[0].childNodes:
-	if child.nodeName != 'path':
-            continue
-        project = child.childNodes[0].nodeValue
-
-    # remove filename
-    idx = project.rindex("/")
-    project = project[:idx]
-    print "Building gitw project '%s'" % project
-    try:
-        message = str(project + "|" + sys.argv[2] + "|" + msg + "\r\n")
-        client = telnetlib.Telnet(GITW_HOST, GITW_PORT)
-        client.write(message)
-        client.close()
-    except Exception, e:
-        sys.stderr.write("Error communicating with gitw server: " + str(e) + "\n")
-        exit(0)
-
-to post-commit file.
