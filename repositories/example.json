@@ -1,15 +1,15 @@
 {
-    "Repository"  : "svn",
+    "Repository"  : "git",
     "Source"      : "remote",
-	"Name"	      : "example-repository",
-	"Location"    : "https://localhost/svn/example",
+	"Name"	      : "small-project",
+	"Location"    : "file:///home/luka/project.git",
 	"Build"		  : "make",
     "Test"        : "/some/path/run.sh",
     "LongTest"    : {
         "Executable" : "example",
         "FollowChildren" : "false" 
     },
-	"OutputDirectory" : "/some/path/",
+	"OutputDirectory" : "/home/luka/output",
 	"NotifyEmail" : "myemail@example.com",
-    "Description" : "Build Example, run unit tests, then a stress-test"
+    "Description" : "Small git repo."
 }

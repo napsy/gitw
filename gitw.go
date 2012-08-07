@@ -43,8 +43,8 @@ import (
     "encoding/gob"
     "net/smtp"
     "strings"
-    "exp/inotify"
     "net"
+    "./inotify"
 )
 
 type Config struct {
@@ -116,7 +116,7 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
 	cmd := exec.Command(repository.Build)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("Erorr running %s: %s\n", repository.Build, err)
+		fmt.Printf("Error running %s: %s\n", repository.Build, err)
 		status = []byte("fail\n\n")
 		ok = false
 	}
@@ -317,7 +317,7 @@ func RepositoryWatchdog(repositories []Repository) {
 }
 
 func RemoteRepositoryWatchdog(repositories []Repository) {
-    netlisten, err := net.Listen("tcp", "192.168.101.196:9988")
+    netlisten, err := net.Listen("tcp", ":9988")
     if err != nil {
         panic(err.Error())
     }
@@ -337,7 +337,7 @@ func RemoteRepositoryWatchdog(repositories []Repository) {
         }
         tokens := strings.Split(line, "|")
         if len(tokens) < 3 {
-            fmt.Printf(":: Invalid line from client '%s', skipping ...", line)
+            fmt.Printf(":: Invalid line from client '%s', skipping ...\n", line)
             continue
         }
         r, rev, msg := tokens[0], tokens[1], tokens[2]
