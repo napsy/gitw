@@ -1,6 +1,0 @@
-include $(GOROOT)/src/Make.inc
-
-TARG    = gitw
-GOFILES = gitw.go
-
-include $(GOROOT)/src/Make.cmd
