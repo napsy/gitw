@@ -293,6 +293,7 @@ func ViewLongRun(w http.ResponseWriter, req *http.Request) {
     }
     */
     snapshot := LoadSystemSnapshot(log_filename)
+    fmt.Println(snapshot)
     templ, err := template.ParseFiles("template-longrun.html")
     if err != nil {
         io.WriteString(w, err.Error())
@@ -354,10 +355,10 @@ func main() {
 	http.HandleFunc("/longrun/", ViewLongRun)
 	http.HandleFunc("/getlongtest/", GetLongTest)
 
-    // serve static files on port 12346
-    go http.ListenAndServe(":12346", http.FileServer(http.Dir("static")))
-    // and the web interface on port 12345
-	err := http.ListenAndServe(":12345", nil)
+    // serve static files on port 12343
+    go http.ListenAndServe(":12343", http.FileServer(http.Dir("static")))
+    // and the web interface on port 12344
+	err := http.ListenAndServe(":12344", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

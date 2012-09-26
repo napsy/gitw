@@ -1,0 +1,129 @@
+<!DOCTYPE html >
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <!--
+        /**
+        * o------------------------------------------------------------------------------o
+        * | This file is part of the RGraph package - you can learn more at:             |
+        * |                                                                              |
+        * |                          http://www.rgraph.net                               |
+        * |                                                                              |
+        * | This package is licensed under the RGraph license. For all kinds of business |
+        * | purposes there is a small one-time licensing fee to pay and for non          |
+        * | commercial  purposes it is free to use. You can read the full license here:  |
+        * |                                                                              |
+        * |                      http://www.rgraph.net/LICENSE.txt                       |
+        * o------------------------------------------------------------------------------o
+        */
+    -->
+    <title>An example of the Line chart</title>
+    
+    <meta name="keywords" content="rgraph html5 canvas example line charts" />
+    <meta name="description" content="An example of the type of Line chart that RGraph can produce" />
+    <meta name="googlebot" content="NOODP">
+    
+    <meta property="og:title" content="RGraph: HTML5 Javascript charts library" />
+    <meta property="og:description" content="A charts library based on the HTML5 canvas tag" />
+    <meta property="og:image" content="http://www.rgraph.net/images/logo.png"/>
+
+    <link rel="stylesheet" href="../css/website.css" type="text/css" media="screen" />
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    
+    <!-- Place this tag in your head or just before your close body tag -->
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="../libraries/RGraph.common.core.js" ></script>
+    <script src="../libraries/RGraph.common.context.js" ></script>
+    <script src="../libraries/RGraph.common.annotate.js" ></script>
+    <script src="../libraries/RGraph.common.tooltips.js" ></script>
+    <script src="../libraries/RGraph.common.zoom.js" ></script>
+    <script src="../libraries/RGraph.common.effects.js" ></script>
+    <script src="../libraries/RGraph.common.key.js" ></script>
+    <script src="../libraries/RGraph.line.js" ></script>
+    <script src="../libraries/RGraph.common.key.js" ></script>
+    <!--[if lt IE 9]><script src="../excanvas/excanvas.original.js"></script><![endif]-->
+    <script src="libraries/jquery.min.js" ></script>
+
+    <script>
+        window.onload = function ()
+        {
+            var line1 = new RGraph.Line('line1', [56,45,43,52,56,65,21,23,34,15,21,12], [35,43,41,41,42,46,42,39,46,41,45,65,54]);
+            line1.Set('chart.background.grid', true);
+            line1.Set('chart.linewidth', 5);
+            line1.Set('chart.gutter.left', 35);
+            line1.Set('chart.hmargin', 5);
+
+            if (!document.all || RGraph.isIE9up()) {
+                line1.Set('chart.shadow', true);
+            }
+            line1.Set('chart.tickmarks', null);
+            line1.Set('chart.units.post', 'k');
+            line1.Set('chart.colors', ['red', 'green']);
+            line1.Set('chart.background.grid.autofit', true);
+            line1.Set('chart.background.grid.autofit.numhlines', 10);
+            line1.Set('chart.curvy', 1);
+            line1.Set('chart.curvy.factor', 0.25);
+            line1.Set('chart.labels',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+            line1.Set('chart.title','A curvy Line chart');
+            
+            line1.Draw();
+        }
+    </script>
+
+    <?php PrintAnalyticsCode() ?>
+
+</head>
+<body>
+
+    
+    <!-- Social networking buttons -->
+        <?php
+            $prefix = substr($_SERVER['SERVER_NAME'], 0, 3);
+            require("/rgraph.{$prefix}/social.html");
+        ?>
+    <!-- Social networking buttons -->
+
+
+<div id="breadcrumb">
+    <a href="../index.html">RGraph: HTML5 Javascript charts library</a>
+    >
+    <a href="./index.html">Examples</a>
+    >
+    Line charts example
+</div>
+
+<h1>Line <span>charts</span></h1>
+
+    <script>
+        if (RGraph.isOld()) {
+            document.write('<div style="background-color: #fee; border: 2px dashed red; padding: 5px"><b>Important</b><br /><br /> Internet Explorer does not natively support the HTML5 canvas tag, so if you want to see the charts, you can either:<ul><li>Install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a></li><li>Use ExCanvas. This is provided in the RGraph Archive.</li><li>Use another browser entirely. Your choices are Firefox 3.5+, Chrome 2+, Safari 4+ or Opera 10.5+. </li></ul> <b>Note:</b> Internet Explorer 9 fully supports the canvas tag.</div>');
+        }
+    </script>
+    
+    <div>
+    
+        <div>
+            <p>
+                Like Bar charts, Line charts are one of the most versatile chart types. It is similar, but can indicate
+                chronological data better. Line charts are good if, for example, you want to illustrate sales figures
+                over a year (or any period of time). You'll then be able to easily see whether sales are going up, down
+                or are stagnant. It will also become apparent which months are busier than others. By using multiple
+                line charts you can show multiple sets of data (eg two or more years of figures) to your charts. You can
+                customise line charts by stipulating them as being filled, having drop shadows, keys, having the X
+                axis in the centre, different colors, different tickmark styles and tooltips etc.
+            </p>
+
+            <ul>
+                <li><a href="../docs/line.html">Line charts API documentation</a></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center">
+            <canvas id="line1" width="600" height="250">[Please wait...]</canvas>
+        </div>
+    </div>
+
+</body>
+</html>

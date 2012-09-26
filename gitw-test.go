@@ -16,6 +16,7 @@ import (
 type LongTestConfig struct {
     Executable     string
     FollowChuldren string
+    Test           string
 }
 
 type Repository struct {
@@ -150,9 +151,18 @@ func UpdateCpuUsage(ticker *time.Ticker, _pid int) {
         <-ticker.C
     }
     for {
+        fmt.Println("Updating CPU")
         utime_now, stime_now, cpu_utime_now, cpu_stime_now = fetchCpuData(pid)
+        if cpu_stime_now == 0 {
+            <-ticker.C
+            continue;
+        }
         time_total_now := cpu_stime_now + cpu_utime_now
         time_total_before := cpu_stime_before + cpu_utime_before
+        if (time_total_now - time_total_before) == 0 {
+            <-ticker.C
+            continue;
+        }
         user_util := 100 * (utime_now - utime_before) / (time_total_now - time_total_before);
         sys_util := 100 * (stime_now - stime_before) / (time_total_now - time_total_before);
 
@@ -215,13 +225,15 @@ func Sampler(repo *Repository) {
         for !running {
             time.Sleep(time.Second)
         }
-        sample := GetSample(repo)
-        fmt.Printf("--- process %s (pid %d) ---\n", "koala-nm", sample.Pid)
-        fmt.Printf("Number of opened files: %d\n", sample.OpenFiles)
-        fmt.Printf("Used memory (RSS): %d KiB\n", sample.MemoryUsage)
-        fmt.Printf("CPU utilization: %d%%\n", sample.CpuUsage)
-        WriteToFile(repo, sample)
-        time.Sleep(time.Second)
+        for {
+            sample := GetSample(repo)
+            fmt.Printf("--- process %s (pid %d) ---\n", "koala-nm", sample.Pid)
+            fmt.Printf("Number of opened files: %d\n", sample.OpenFiles)
+            fmt.Printf("Used memory (RSS): %d KiB\n", sample.MemoryUsage)
+            fmt.Printf("CPU utilization: %d%%\n", sample.CpuUsage)
+            WriteToFile(repo, sample)
+            time.Sleep(time.Second)
+        }
 }
 
 func main() {
@@ -243,26 +255,32 @@ func main() {
 
     repo := LoadRepository(string(fileCtx))
 
+    if strings.Index(repo.LongTest.Test, "{TMPDIR}") == 0 {
+        repo.LongTest.Test = os.Args[2] + repo.LongTest.Test[8:]
+    }
+    // Execute the test program and wait for it's termination
+    fmt.Println("Will run script: " + repo.LongTest.Test + " in dir. " + os.Args[2])
+    cmd := exec.Command(repo.LongTest.Test, os.Args[2])
+    cmd.Env = os.Environ()
+    cmd.Env = append(cmd.Env, "LONGTEST=1")
+    err = cmd.Start()
 
+    time.Sleep(5*time.Second)
     // start collecting CPU usage
     ticker := time.NewTicker(time.Second)
     pid := GetPidFromProcess(repo.LongTest.Executable)
+
     if pid == -1 {
         fmt.Printf("Error: process not found\n")
         return
     }
     go UpdateCpuUsage(ticker, pid)
-
     go Sampler(&repo)
-    // Execute the test program and wait for it's termination
-    cmd := exec.Command(repo.Test, os.Args[2])
-    cmd.Env = os.Environ()
-    cmd.Env = append(cmd.Env, "LONGTEST=1")
-    err = cmd.Start()
+
     if err != nil {
         fmt.Printf(":: Error executing test program '%s': %s\n", repo.Test, err.Error())
     }
-    time.Sleep(2*time.Second)
+
     running = true
     cmd.Wait()
 }

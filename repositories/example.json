@@ -1,15 +1,15 @@
 {
     "Repository"  : "git",
-    "Source"      : "remote",
+    "Source"      : "remote/newb",
 	"Name"	      : "small-project",
-	"Location"    : "file:///home/luka/project.git",
+	"Location"    : "file:///home/napsy/git/git-test",
 	"Build"		  : "make",
     "Test"        : "/some/path/run.sh",
     "LongTest"    : {
         "Executable" : "example",
         "FollowChildren" : "false" 
     },
-	"OutputDirectory" : "/home/luka/output",
+	"OutputDirectory" : "/home/napsy/output",
 	"NotifyEmail" : "myemail@example.com",
     "Description" : "Small git repo."
 }

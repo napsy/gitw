@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <!--
+        /**
+        * o------------------------------------------------------------------------------o
+        * | This file is part of the RGraph package - you can learn more at:             |
+        * |                                                                              |
+        * |                          http://www.rgraph.net                               |
+        * |                                                                              |
+        * | This package is licensed under the RGraph license. For all kinds of business |
+        * | purposes there is a small one-time licensing fee to pay and for non          |
+        * | commercial  purposes it is free to use. You can read the full license here:  |
+        * |                                                                              |
+        * |                      http://www.rgraph.net/LICENSE.txt                       |
+        * o------------------------------------------------------------------------------o
+        */
+    -->
+    <title>An example of the Meter chart</title>
+    
+    <meta name="keywords" content="rgraph html5 canvas example meter charts" />
+    <meta name="description" content="An example of the type of Meter chart that RGraph can produce" />
+    <meta name="googlebot" content="NOODP">
+    
+    <meta property="og:title" content="RGraph: HTML5 Javascript charts library" />
+    <meta property="og:description" content="A charts library based on the HTML5 canvas tag" />
+    <meta property="og:image" content="http://www.rgraph.net/images/logo.png"/>
+
+    <link rel="stylesheet" href="../css/website.css" type="text/css" media="screen" />
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    
+    <!-- Place this tag in your head or just before your close body tag -->
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="../libraries/RGraph.common.core.js" ></script>
+    <script src="../libraries/RGraph.common.effects.js" ></script>
+    <script src="../libraries/RGraph.common.context.js" ></script>
+    <script src="../libraries/RGraph.common.annotate.js" ></script>
+    <script src="../libraries/RGraph.common.tooltips.js" ></script>
+    <script src="../libraries/RGraph.common.zoom.js" ></script>
+    <script src="../libraries/RGraph.common.resizing.js" ></script>
+    <script src="../libraries/RGraph.meter.js" ></script>
+    <!--[if lt IE 9]><script src="../excanvas/excanvas.original.js"></script><![endif]-->
+
+    <script>
+        window.onload = function ()
+        {
+            var min = 0;
+            var max = 100;
+
+            var meter1 = new RGraph.Meter('meter1', min, max, 74);
+            
+            var grad1 = meter1.context.createRadialGradient(meter1.canvas.width / 2,meter1.canvas.height - 25,0,meter1.canvas.width / 2,meter1.canvas.height - 25,200);
+            grad1.addColorStop(0, 'green');
+            grad1.addColorStop(1, 'white');
+            
+            var grad2 = meter1.context.createRadialGradient(meter1.canvas.width / 2, meter1.canvas.height - 25,0,meter1.canvas.width / 2, meter1.canvas.height - 25,200);
+            grad2.addColorStop(0, 'yellow');
+            grad2.addColorStop(1, 'white');
+            
+            var grad3 = meter1.context.createRadialGradient(meter1.canvas.width / 2, meter1.canvas.height - 25,0,meter1.canvas.width / 2, meter1.canvas.height - 25,200);
+            grad3.addColorStop(0, 'red');
+            grad3.addColorStop(1, 'white');
+            
+            meter1.Set('chart.labels.position', 'inside');
+            meter1.Set('chart.title', 'A sample measurement');
+            meter1.Set('chart.title.vpos', 0.5);
+            meter1.Set('chart.title.color', 'black');
+            meter1.Set('chart.green.color', grad1);
+            meter1.Set('chart.yellow.color', grad2);
+            meter1.Set('chart.red.color', grad3);
+            meter1.Set('chart.border', false);
+            meter1.Set('chart.needle.linewidth', 5);
+            meter1.Set('chart.needle.tail', true);
+            meter1.Set('chart.tickmarks.big.num', 0);
+            meter1.Set('chart.tickmarks.small.num', 0);
+            meter1.Set('chart.segment.radius.start', 100);
+            meter1.Set('chart.needle.radius', 80);
+            meter1.Set('chart.needle.linewidth', 2);
+            meter1.Set('chart.linewidth.segments', 15);
+            meter1.Set('chart.strokestyle', 'white');
+            meter1.Set('chart.text.size', 14);
+            meter1.Draw();
+        }
+    </script>
+
+    <?php PrintAnalyticsCode() ?>
+</head>
+<body>
+
+    
+    <!-- Social networking buttons -->
+        <?php
+            $prefix = substr($_SERVER['SERVER_NAME'], 0, 3);
+            require("/rgraph.{$prefix}/social.html");
+        ?>
+    <!-- Social networking buttons -->
+
+
+    <h1>Meter <span>charts</span></h1>
+
+    <script>
+        if (RGraph.isOld()) {
+            document.write('<div style="background-color: #fee; border: 2px dashed red; padding: 5px"><b>Important</b><br /><br /> Internet Explorer does not natively support the HTML5 canvas tag, so if you want to see the charts, you can either:<ul><li>Install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a></li><li>Use ExCanvas. This is provided in the RGraph Archive.</li><li>Use another browser entirely. Your choices are Firefox 3.5+, Chrome 2+, Safari 4+ or Opera 10.5+. </li></ul> <b>Note:</b> Internet Explorer 9 fully supports the canvas tag.</div>');
+        }
+    </script>
+
+
+    <div id="breadcrumb">
+        <a href="../index.html">RGraph: HTML5 Javascript charts library</a>
+        >
+        <a href="./index.html">Examples</a>
+        >
+        Meter charts example
+    </div>
+
+    <div>
+        <p>
+            Meter charts are similar to Odometer charts albeit only a semi-circle and not a full circle. It can be
+            better when trying illustrate a particular level, but only have a limited amount of space. It could also
+            be quite effective as part of a control panel.
+        </p>
+
+        <ul>
+            <li><a href="../docs/meter.html">Meter charts API documentation</a></li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center">
+        <canvas id="meter1" width="400" height="250"><div class="canvasfallback">[No canvas support]</div></canvas>
+    </div>
+
+</body>
+</html>

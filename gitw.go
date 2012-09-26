@@ -5,7 +5,7 @@
  *
  * version 0.1
  *
- * Copyright (c) 2011, Luka Napotnik <luka.napotnik@gmail.com>
+ * Copyright (c) 2012, Luka Napotnik <luka.napotnik@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,7 @@ type Repository struct {
     OutputDirectory string
     NotifyEmail     string
     Filename        string
+    Branch          string
 }
 
 var cwd string
@@ -78,7 +79,11 @@ func (repository Repository) Checkout(revision, message string) (string, bool) {
 
     switch repository.Repository {
     case "git":
-        cmd = exec.Command("git", "clone", repository.Location, tmpDir)
+        if len(repository.Branch) > 0 {
+            cmd = exec.Command("git", "clone", "-b", repository.Branch, repository.Location, tmpDir)
+        } else {
+            cmd = exec.Command("git", "clone", repository.Location, tmpDir)
+        }
     case "svn":
         cmd = exec.Command("svn", "checkout", repository.Location, tmpDir)
     default:
@@ -137,14 +142,18 @@ func (repository Repository) RunTest(tmpDir string) bool {
 	fmt.Printf(":: Running tests for '%s'\n", repository.Name)
 	status := []byte("succ\n\n")
     os.Chdir(tmpDir)
+    if strings.Index(repository.Test, "{TMPDIR}") == 0 {
+        repository.Test = tmpDir + repository.Test[8:]
+    }
 	cmd := exec.Command(repository.Test, tmpDir)
 	output, err := cmd.CombinedOutput()
+    fmt.Println("Command ended ..")
 	if err != nil {
 		fmt.Printf("Erorr running %s: %s\n", repository.Test, err)
 		status = []byte("fail\n\n")
 		ok = false
 	}
-    //fmt.Println(string(output))
+    fmt.Println(string(output))
 	status = append(status, output...)
 
 	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-test-output.txt", status, 0644)
@@ -218,6 +227,12 @@ func LoadRepository(configFile string) Repository {
 	if e != nil {
         fmt.Printf("LoadRepository: error decoding repository configuration from file: %s\n", e)
 	}
+    if idx := strings.Index(repo.Source, "/"); idx > -1 {
+        repo.Branch = repo.Source[idx + 1:]
+        repo.Source = repo.Source[:idx]
+        fmt.Println(repo)
+    }
+
 	return repo
 }
 
@@ -268,7 +283,7 @@ sampleConfig := `
     "FileName"  : "filename"
 }
 	`
-    expectedRepository := Repository{"git", "local", "testing", "/home/luka/git/tarock.git", "gomake", "test.sh", "/home/luka/gitw/", "joe@example.com", "filename"}
+    expectedRepository := Repository{"git", "local", "testing", "/home/luka/git/tarock.git", "gomake", "test.sh", "/home/luka/gitw/", "joe@example.com", "filename", ""}
 	repository := LoadRepository(sampleConfig)
 	if repository != expectedRepository {
 		return false
@@ -284,6 +299,7 @@ func RepositoryWatchdog(repositories []Repository) {
 		return
 	}
 	for _, repository := range repositories {
+
         if repository.Source == "remote" {
             continue
         }

@@ -8,18 +8,18 @@
       }
   </style>
   <script src="http://code.jquery.com/jquery-latest.js"></script>
-<script type="text/javascript" src="http://localhost:12346/cv_graph.js"></script>
+<script type="text/javascript" src="http://localhost:12343/cv_graph.js"></script>
     <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
 
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.core.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.context.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.annotate.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.tooltips.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.zoom.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.effects.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.key.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.line.js" ></script>
-    <script src="http://localhost:12346/RGraph/libraries/RGraph.common.key.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.core.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.context.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.annotate.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.tooltips.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.zoom.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.effects.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.key.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.line.js" ></script>
+    <script src="http://localhost:12343/RGraph/libraries/RGraph.common.key.js" ></script>
 
   <script type="text/javascript">
     var ramUsage = 0
@@ -48,7 +48,7 @@ window.onload = function() {
 }
 
       function updateData() {
-          $.getJSON("http://localhost:12345/getlongtest/{{ .Name }}",
+          $.getJSON("http://192.168.101.196:12344/getlongtest/{{ .Name }}",
           function(data){
               $("#cpu").text(data["CpuUsage"]);
               $("#mem").text(data["MemoryUsage"]);

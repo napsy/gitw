@@ -1,0 +1,102 @@
+<!DOCTYPE html >
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <!--
+        /**
+        * o------------------------------------------------------------------------------o
+        * | This file is part of the RGraph package - you can learn more at:             |
+        * |                                                                              |
+        * |                          http://www.rgraph.net                               |
+        * |                                                                              |
+        * | This package is licensed under the RGraph license. For all kinds of business |
+        * | purposes there is a small one-time licensing fee to pay and for non          |
+        * | commercial  purposes it is free to use. You can read the full license here:  |
+        * |                                                                              |
+        * |                      http://www.rgraph.net/LICENSE.txt                       |
+        * o------------------------------------------------------------------------------o
+        */
+    -->
+    <title>An example of RGraph Fuel charts</title>
+    
+    <meta name="keywords" content="rgraph html5 canvas example fuel chart" />
+    <meta name="description" content="An example of the type of Fuel gauge that RGraph can produce" />
+    <meta name="googlebot" content="NOODP">
+    
+    <meta property="og:title" content="RGraph: HTML5 Javascript charts library" />
+    <meta property="og:description" content="A charts library based on the HTML5 canvas tag" />
+    <meta property="og:image" content="http://www.rgraph.net/images/logo.png"/>
+
+    <link rel="stylesheet" href="../css/website.css" type="text/css" media="screen" />
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    
+    <!-- Place this tag in your head or just before your close body tag -->
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="../libraries/RGraph.common.core.js" ></script>
+    <script src="../libraries/RGraph.common.effects.js" ></script>
+    <script src="../libraries/RGraph.fuel.js" ></script>
+    <!--[if lt IE 9]><script src="../excanvas/excanvas.original.js"></script><![endif]-->
+
+    <script>
+        window.onload = function ()
+        {
+            // MIN, MAX, INDICATED
+            var fuel1 = new RGraph.Fuel('fuel1',0,100,78);
+            fuel1.Draw();
+        }
+    </script>
+
+    <?php PrintAnalyticsCode() ?>
+
+</head>
+<body>
+
+    
+    <!-- Social networking buttons -->
+        <?php
+            $prefix = substr($_SERVER['SERVER_NAME'], 0, 3);
+            require("/rgraph.{$prefix}/social.html");
+        ?>
+    <!-- Social networking buttons -->
+
+
+<div id="breadcrumb">
+    <a href="../index.html">RGraph: HTML5 Javascript charts library</a>
+    >
+    <a href="./index.html">Examples</a>
+    >
+    Fuel Gauge example
+</div>
+
+<h1>Fuel <span>Gauge charts</span></h1>
+
+    <script>
+        if (RGraph.isOld()) {
+            document.write('<div style="background-color: #fee; border: 2px dashed red; padding: 5px"><b>Important</b><br /><br /> Internet Explorer does not natively support the HTML5 canvas tag, so if you want to see the charts, you can either:<ul><li>Install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a></li><li>Use ExCanvas. This is provided in the RGraph Archive.</li><li>Use another browser entirely. Your choices are Firefox 3.5+, Chrome 2+, Safari 4+ or Opera 10.5+. </li></ul> <b>Note:</b> Internet Explorer 9 fully supports the canvas tag.</div>');
+        }
+    </script>
+    
+    <div>
+    
+        <div>
+            <p>
+                The Fuel Gauge is a variation on the Meter that could be incorporated into a control panel or similar.
+                The center image, the colors and the text can all be customised as the two examples below show. The fuel
+                icon is the default icon
+                for the chart and uses a data: URL - ie there's no external image necessary.
+            </p>
+
+            <ul>
+                <li><a href="../docs/fuel.html">Fuel Gauge API documentation</a></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center">
+            <canvas id="fuel1" width="200" height="200">[Please wait...]</canvas>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -66,7 +66,7 @@ Key explanations:
 
 Adding repositories
 
-Example repository for Koala Okular:
+Example project repository:
 
 {
     "repository"      : "svn",
@@ -83,7 +83,7 @@ Example repository for Koala Okular:
 Key explanations:
 
  - repository: either svn or git,
- - source: remote or local,
+ - source: remote or local. You can name a branch by appending /<branch_name> to the usual text.
  - name: name of the repository,
  - location: if source is set to local, enter a valid local path to repository, or an URL if source is remote,
  - build: the command to execute after code checkout is done,

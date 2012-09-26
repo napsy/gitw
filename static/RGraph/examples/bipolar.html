@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <!--
+        /**
+        * o------------------------------------------------------------------------------o
+        * | This file is part of the RGraph package - you can learn more at:             |
+        * |                                                                              |
+        * |                          http://www.rgraph.net                               |
+        * |                                                                              |
+        * | This package is licensed under the RGraph license. For all kinds of business |
+        * | purposes there is a small one-time licensing fee to pay and for non          |
+        * | commercial  purposes it is free to use. You can read the full license here:  |
+        * |                                                                              |
+        * |                      http://www.rgraph.net/LICENSE.txt                       |
+        * o------------------------------------------------------------------------------o
+        */
+    -->
+    <title>An example of an RGraph Bi-polar chart</title>
+    
+    <meta name="keywords" content="rgraph html5 canvas example bipolar charts" />
+    <meta name="description" content="An example of the type of Bi-polar chart that RGraph can produce" />
+    <meta name="googlebot" content="NOODP">
+    
+    <meta property="og:title" content="RGraph: HTML5 Javascript charts library" />
+    <meta property="og:description" content="A charts library based on the HTML5 canvas tag" />
+    <meta property="og:image" content="http://www.rgraph.net/images/logo.png"/>
+
+    <link rel="stylesheet" href="../css/website.css" type="text/css" media="screen" />
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    
+    <!-- Place this tag in your head or just before your close body tag -->
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="../libraries/RGraph.common.core.js"></script>
+    <script src="../libraries/RGraph.common.tooltips.js"></script>
+    <script src="../libraries/RGraph.bipolar.js"></script>
+    <!--[if lt IE 9]><script src="../excanvas/excanvas.original.js"></script><![endif]-->
+
+    <script>
+        window.onload = function ()
+        {
+            var left  = [5,6,8,9,12,13,4,9];
+            var right = [5,8,4,11,15,26,13,16];
+           
+            var bipolar1 = new RGraph.Bipolar('bipolar1', left, right);
+            bipolar1.Set('chart.colors', ['red']);
+            bipolar1.Set('chart.labels', ['Barry', 'John', 'Fred', 'George', 'Rich', 'Larry', 'John', 'Mike']);
+            bipolar1.Set('chart.title.left', '2007');
+            bipolar1.Set('chart.title.right', '2008');
+            bipolar1.Set('chart.title', 'Sales comparison');
+            
+            if (!RGraph.isIE8()) {
+                bipolar1.Set('chart.tooltips', [function () {return 'Barry';}, 'id:john', 'Fred', 'George', 'Rich', 'Larry', 'John', 'Mike', 'Barry', 'John', 'Fred', 'George', 'Rich', 'Larry', 'John', 'Mike']);
+                bipolar1.Set('chart.tooltips.effect', 'fade');
+            }
+
+            bipolar1.Set('chart.units.post', 'k');
+            bipolar1.Set('chart.xmax', 35);
+            bipolar1.Set('chart.shadow', true);
+            bipolar1.Set('chart.shadow.offsety', 0);
+            bipolar1.Set('chart.shadow.offsetx', 0);
+            bipolar1.Set('chart.shadow.color', '#aaa');
+            bipolar1.Set('chart.shadow.blur', 25);
+            bipolar1.Draw();
+        }
+    </script>
+
+    <?php PrintAnalyticsCode() ?>
+</head>
+<body>
+    <!-- Social networking buttons -->
+        <?php
+            $prefix = substr($_SERVER['SERVER_NAME'], 0, 3);
+            require("/rgraph.{$prefix}/social.html");
+        ?>
+    <!-- Social networking buttons -->
+
+<div id="breadcrumb">
+    <a href="../index.html">RGraph: HTML5 Javascript charts library</a>
+    >
+    <a href="./index.html">Examples</a>
+    >
+    Bi-polar charts example
+</div>
+
+
+<h1>Bi-polar <span>charts</span></h1>
+
+    <script>
+        if (RGraph.isOld()) {
+            document.write('<div style="background-color: #fee; border: 2px dashed red; padding: 5px"><b>Important</b><br /><br /> Internet Explorer does not natively support the HTML5 canvas tag, so if you want to see the charts, you can either:<ul><li>Install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a></li><li>Use ExCanvas. This is provided in the RGraph Archive.</li><li>Use another browser entirely. Your choices are Firefox 3.5+, Chrome 2+, Safari 4+ or Opera 10.5+. </li></ul> <b>Note:</b> Internet Explorer 9 fully supports the canvas tag.</div>');
+        }
+    </script>
+    
+    <div>
+
+        <div>
+            <p>
+                The Bi-polar chart is also known as an age-frequency chart or a population pyramid. It allows you to very
+                straight forwardly compare two sets of data. For example two years worth of sales figues. By using this type
+                of chart abnormalities will become apparent. Other charts that would also be comparable, include a grouped
+                bar chart, a stacked bar chart, and a multiple line chart.
+            </p>
+
+            <ul>
+                <li><a href="../docs/bipolar.html">Bi-polar chart API documentation</a></li>
+            </ul>
+        </div>
+        
+
+        <div style="text-align: center">
+            <canvas id="bipolar1" width="600" height="250">[No canvas support]</canvas>
+        </div>
+    </div>
+    
+    <div id="john" style="display: none">John</div>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <!--
+        /**
+        * o------------------------------------------------------------------------------o
+        * | This file is part of the RGraph package - you can learn more at:             |
+        * |                                                                              |
+        * |                          http://www.rgraph.net                               |
+        * |                                                                              |
+        * | This package is licensed under the RGraph license. For all kinds of business |
+        * | purposes there is a small one-time licensing fee to pay and for non          |
+        * | commercial  purposes it is free to use. You can read the full license here:  |
+        * |                                                                              |
+        * |                      http://www.rgraph.net/LICENSE.txt                       |
+        * o------------------------------------------------------------------------------o
+        */
+    -->
+    <title>An example of RGraph Funnel charts</title>
+    
+    <meta name="keywords" content="rgraph html5 canvas example funnel chart" />
+    <meta name="description" content="An example of the type of Funnel chart that RGraph can produce" />
+    <meta name="googlebot" content="NOODP">
+    
+    <meta property="og:title" content="RGraph: HTML5 Javascript charts library" />
+    <meta property="og:description" content="A charts library based on the HTML5 canvas tag" />
+    <meta property="og:image" content="http://www.rgraph.net/images/logo.png"/>
+
+    <link rel="stylesheet" href="../css/website.css" type="text/css" media="screen" />
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    
+    <!-- Place this tag in your head or just before your close body tag -->
+    <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+
+    <script src="../libraries/RGraph.common.core.js" ></script>
+    <script src="../libraries/RGraph.common.context.js" ></script>
+    <script src="../libraries/RGraph.common.annotate.js" ></script>
+    <script src="../libraries/RGraph.common.tooltips.js" ></script>
+    <script src="../libraries/RGraph.common.zoom.js" ></script>
+    <script src="../libraries/RGraph.common.resizing.js" ></script>
+    <script src="../libraries/RGraph.funnel.js" ></script>
+    <!--[if lt IE 9]><script src="../excanvas/excanvas.original.js"></script><![endif]-->
+
+    <script>
+        /**
+        * The onload function creates the graph
+        */
+        window.onload = function ()
+        {
+            var funnel = new RGraph.Funnel('funnel1', [100,45,45,26,24]);
+            funnel.Set('chart.gutter.top', 40);
+            funnel.Set('chart.gutter.left', 150);
+            funnel.Set('chart.text.boxed', false);
+            funnel.Set('chart.title', 'Leads progressing to sales');
+            
+            funnel.Set('chart.shadow', true);
+            funnel.Set('chart.shadow.color', 'gray');
+            funnel.Set('chart.shadow.blur', 25);
+            funnel.Set('chart.shadow.offsetx', 0);
+            funnel.Set('chart.shadow.offsety', 0);
+            
+            
+            if (!RGraph.isOld()) {
+            
+                /**
+                * This gradient is for the highlight fill
+                */
+                var grad = funnel.context.createLinearGradient(funnel.Get('chart.gutter.left'),0,funnel.canvas.width - funnel.Get('chart.gutter.right'),0);
+                grad.addColorStop(1, 'white');
+                grad.addColorStop(0, 'rgba(255,255,255,0)');
+            
+                funnel.Set('chart.tooltips', [
+                                              'id:tooltip_contact',
+                                              'id:tooltip_lead',
+                                              'id:tooltip_call',
+                                              'id:tooltip_visit'
+                                             ]);
+
+                funnel.Set('chart.tooltips.effect', 'fade');
+                funnel.Set('chart.highlight.fill', grad);
+                funnel.Set('chart.zoom.hdir', 'center');
+                funnel.Set('chart.zoom.vdir', 'up');
+                funnel.Set('chart.contextmenu', [['Zoom in', RGraph.Zoom]]);
+            }
+
+            funnel.Set('chart.labels', ['Initial contact', 'Established lead', 'Telephone contact', 'Site visit', 'Sale finalised']);
+            funnel.Set('chart.labels.x', 10);
+            funnel.Set('chart.text.boxed', false);// This is the default
+            funnel.Set('chart.strokestyle', 'rgba(0,0,0,0)');
+            funnel.Set('chart.labels.sticks', true);
+            funnel.Set('chart.taper', false);
+            funnel.Draw();
+        }
+    </script>
+
+    <?php PrintAnalyticsCode() ?>
+</head>
+<body>
+
+    <!-- Social networking buttons -->
+        <?php
+            $prefix = substr($_SERVER['SERVER_NAME'], 0, 3);
+            require("/rgraph.{$prefix}/social.html");
+        ?>
+    <!-- Social networking buttons -->
+
+    <div id="breadcrumb">
+        <a href="../index.html">RGraph: HTML5 Javascript charts library</a>
+        >
+        <a href="./index.html">Examples</a>
+        >
+        Funnel chart example
+    </div>
+
+    <h1>Funnel <span>charts</span></h1>
+
+    <script>
+        if (RGraph.isOld()) {
+            document.write('<div style="background-color: #fee; border: 2px dashed red; padding: 5px"><b>Important</b><br /><br /> Internet Explorer does not natively support the HTML5 canvas tag, so if you want to see the charts, you can either:<ul><li>Install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a></li><li>Use ExCanvas. This is provided in the RGraph Archive.</li><li>Use another browser entirely. Your choices are Firefox 3.5+, Chrome 2+, Safari 4+ or Opera 10.5+. </li></ul> <b>Note:</b> Internet Explorer 9 fully supports the canvas tag.</div>');
+        }
+    </script>
+
+    <div>
+        <div>
+            <p>
+                The funnel chart can be used to show the stages in a sales or order process, from initial lead/contact
+                through to actual sale. It works well if you have a diminishing process, like that shown below. It
+                can show potential revenue in each stage, or like below, it can show actual numbers. It can also
+                highlight potential problems in an organisations sales and/or order fulfillment processes.
+            </p>
+
+            <ul>
+                <li><a href="../docs/funnel.html">Funnel charts API documentation</a></li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center">
+            <canvas id="funnel1" width="500" height="400">[No canvas support]</canvas>
+        </div>
+    </div>
+
+    <div style="display: none">
+        <div id="tooltip_contact"><b>Initial contact</b><br />All potential cutomers were contacted and<br />interest was established.</div>
+        <div id="tooltip_lead"><b>Established lead</b><br />Customers who were interested had their details<br />recorded and passed to the sales team.</div>
+        <div id="tooltip_call"><b>Sales Call</b><br />Interested Customers were called by the<br />sales team.</div>
+        <div id="tooltip_visit"><b>Site visit</b><br />The Customers site was visited by a representative<br />of the sales core.</div>
+        <div id="tooltip_sale"><b>Sale finalised</b><br />A sale was finalised by the sales core.</div>
+    </div>
+
+</body>
+</html>
