@@ -94,6 +94,9 @@ func (repository Repository) Checkout(revision, message string) (string, bool) {
     header := fmt.Sprintf("%s|%s\n", revision, message)
     status := []byte{}
 
+    filename := repository.OutputDirectory + repository.Name + "-checkout-output.txt"
+    os.Remove(filename)
+
     output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("Erorr running git: %s\n", err)
@@ -106,7 +109,7 @@ func (repository Repository) Checkout(revision, message string) (string, bool) {
     }
 	status = append(status, []byte(header)...)
 	status = append(status, output...)
-	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-checkout-output.txt", status, 0644)
+	err = ioutil.WriteFile(filename, status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
@@ -118,6 +121,9 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
 	fmt.Printf(":: Building '%s'\n", repository.Name)
 	status := []byte("succ\n\n")
     os.Chdir(tmpDir)
+
+    filename := repository.OutputDirectory + repository.Name + "-build-output.txt"
+    os.Remove(filename)
 	cmd := exec.Command(repository.Build)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -127,7 +133,7 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
 	}
 	status = append(status, output...)
 
-	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-build-output.txt", status, 0644)
+	err = ioutil.WriteFile(filename, status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
@@ -145,6 +151,10 @@ func (repository Repository) RunTest(tmpDir string) bool {
     if strings.Index(repository.Test, "{TMPDIR}") == 0 {
         repository.Test = tmpDir + repository.Test[8:]
     }
+
+    filename := repository.OutputDirectory + repository.Name + "-test-output.txt"
+    os.Remove(filename)
+
 	cmd := exec.Command(repository.Test, tmpDir)
 	output, err := cmd.CombinedOutput()
     fmt.Println("Command ended ..")
@@ -156,7 +166,7 @@ func (repository Repository) RunTest(tmpDir string) bool {
     fmt.Println(string(output))
 	status = append(status, output...)
 
-	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-test-output.txt", status, 0644)
+	err = ioutil.WriteFile(filename, status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
@@ -172,6 +182,8 @@ func (repository Repository) RunLongTest(tmpDir string) bool {
 	status := []byte("succ\n\n")
     os.Chdir(cwd)
 
+    filename := repository.OutputDirectory + repository.Name + "-gitw-longtest-output.txt"
+    os.Remove(filename)
 
     fmt.Printf("Repository filename: %s, tmpDir: %s\n", repository.Filename, tmpDir)
 	cmd := exec.Command(cwd + "/gitw-test", repository.Filename, tmpDir)
@@ -184,7 +196,7 @@ func (repository Repository) RunLongTest(tmpDir string) bool {
     fmt.Println(string(output))
 	status = append(status, output...)
 
-	err = ioutil.WriteFile(repository.OutputDirectory + repository.Name + "-gitw-longtest-output.txt", status, 0644)
+	err = ioutil.WriteFile(filename, status, 0644)
 	if err != nil {
 		fmt.Printf("Error writing checkout output to file: %s\n", err)
 	}
@@ -199,6 +211,7 @@ func SendMailNotification(repository *Repository, message string) {
 		fmt.Printf("Error sending mail: %s\n", err)
 	}
 }
+
 func ReadConfig() {
 	gob.Register(&Config{})
 
