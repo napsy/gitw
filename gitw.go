@@ -95,7 +95,6 @@ func (repository Repository) Checkout(revision, message string) (string, bool) {
     status := []byte{}
 
     filename := repository.OutputDirectory + repository.Name + "-checkout-output.txt"
-    os.Remove(filename)
 
     output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -123,7 +122,6 @@ func (repository Repository) BuildCheckout(tmpDir string) bool {
     os.Chdir(tmpDir)
 
     filename := repository.OutputDirectory + repository.Name + "-build-output.txt"
-    os.Remove(filename)
 	cmd := exec.Command(repository.Build)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -153,7 +151,6 @@ func (repository Repository) RunTest(tmpDir string) bool {
     }
 
     filename := repository.OutputDirectory + repository.Name + "-test-output.txt"
-    os.Remove(filename)
 
 	cmd := exec.Command(repository.Test, tmpDir)
 	output, err := cmd.CombinedOutput()
@@ -183,7 +180,6 @@ func (repository Repository) RunLongTest(tmpDir string) bool {
     os.Chdir(cwd)
 
     filename := repository.OutputDirectory + repository.Name + "-gitw-longtest-output.txt"
-    os.Remove(filename)
 
     fmt.Printf("Repository filename: %s, tmpDir: %s\n", repository.Filename, tmpDir)
 	cmd := exec.Command(cwd + "/gitw-test", repository.Filename, tmpDir)
@@ -345,6 +341,26 @@ func RepositoryWatchdog(repositories []Repository) {
 	}
 }
 
+func (repository Repository) CleanOutputDirectory() {
+    longTestFilename := repository.OutputDirectory + repository.Name + "-gitw-longtest-output.txt"
+    testFilename := repository.OutputDirectory + repository.Name + "-test-output.txt"
+    checkoutFilename := repository.OutputDirectory + repository.Name + "-checkout-output.txt"
+    buildFilename := repository.OutputDirectory + repository.Name + "-build-output.txt"
+
+    if err := os.Remove(longTestFilename); err != nil {
+        fmt.Printf(":: Error removing longtest output file for '%s': %s\n", repository.Name, err)
+    }
+    if err := os.Remove(testFilename); err != nil {
+        fmt.Printf(":: Error removing test output file for '%s': %s\n", repository.Name, err)
+    }
+    if err := os.Remove(checkoutFilename); err != nil {
+        fmt.Printf(":: Error removing checkout output file for '%s': %s\n", repository.Name, err)
+    }
+    if err := os.Remove(buildFilename); err != nil {
+        fmt.Printf(":: Error removing build output file for '%s': %s\n", repository.Name, err)
+    }
+}
+
 func RemoteRepositoryWatchdog(repositories []Repository) {
     netlisten, err := net.Listen("tcp", ":9988")
     if err != nil {
@@ -373,6 +389,7 @@ func RemoteRepositoryWatchdog(repositories []Repository) {
         found := false
         for _, repository := range repositories {
             if strings.Index(repository.Location, r) != -1 {
+                repository.CleanOutputDirectory()
                 ok3 := true
                 tmpDir, ok1 := repository.Checkout(rev, msg)
                 ok2 := repository.BuildCheckout(tmpDir)

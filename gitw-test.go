@@ -5,12 +5,12 @@ import (
     "io/ioutil"
     "encoding/gob"
     "encoding/json"
+    "bytes"
     "strings"
     "strconv"
     "os"
     "time"
     "os/exec"
-    "runtime"
 )
 
 type LongTestConfig struct {
@@ -34,13 +34,13 @@ type Repository struct {
 type SystemSnapshot struct {
     Name        string
     Pid         int
-    CpuUsage    int
+    CpuUsage    float64
     MemoryUsage int
     OpenFiles   int
     MemoryHistory []int
 }
 
-var currentCpuUtilization int
+var currentCpuUtilization float64
 var MemoryHistory []int
 var running bool
 
@@ -132,47 +132,46 @@ func fetchCpuData(pid int) (int, int, int, int) {
     return utime, cutime, cpu_utime, cpu_stime
 }
 
-func UpdateCpuUsage(ticker *time.Ticker, _pid int) {
-    var (utime_now,
-         stime_now,
-         cpu_stime_now,
-         cpu_utime_now,
-         utime_before,
-         stime_before,
-         cpu_utime_before,
-         cpu_stime_before int)
+func UpdateCpuUsage(ticker *time.Ticker, cmdPid int) {
 
-    for !running {
-        time.Sleep(time.Second)
-    }
-    pid := _pid
-    if utime_before == 0 {
-        utime_before, stime_before, cpu_utime_before, cpu_stime_before = fetchCpuData(pid)
-        <-ticker.C
-    }
+    var out bytes.Buffer
+
+    currentCpuUtilization = 0
     for {
-        fmt.Println("Updating CPU")
-        utime_now, stime_now, cpu_utime_now, cpu_stime_now = fetchCpuData(pid)
-        if cpu_stime_now == 0 {
-            <-ticker.C
-            continue;
+        cmd := exec.Command("ps", "aux")
+        cmd.Stdout = &out
+        err := cmd.Run()
+        if err != nil {
+            fmt.Println(":: Error getting CPU utilization from 'ps':", err)
+            return
         }
-        time_total_now := cpu_stime_now + cpu_utime_now
-        time_total_before := cpu_stime_before + cpu_utime_before
-        if (time_total_now - time_total_before) == 0 {
-            <-ticker.C
-            continue;
+        line, err := out.ReadString('\n')
+        if err!=nil {
+            break;
         }
-        user_util := 100 * (utime_now - utime_before) / (time_total_now - time_total_before);
-        sys_util := 100 * (stime_now - stime_before) / (time_total_now - time_total_before);
-
-        //fmt.Printf("User utilization: %d, System utilization: %d\n", user_util, sys_util)
-        utime_before, stime_before, cpu_utime_before, cpu_stime_before = utime_now, stime_now, cpu_utime_now, cpu_stime_now
-
-        currentCpuUtilization = (user_util + sys_util) / runtime.NumCPU();
+        tokens := strings.Split(line, " ")
+        ft := make([]string, 0)
+        for _, t := range(tokens) {
+            if t!="" && t!="\t" {
+                ft = append(ft, t)
+            }
+        }
+        pid, err := strconv.Atoi(ft[1])
+        if err!=nil {
+            continue
+        }
+        if pid != cmdPid {
+            continue
+        }
+        cpu, err := strconv.ParseFloat(ft[2], 64)
+        if err!=nil {
+            fmt.Println("Error parsing CPU float value:", err)
+        }
+        currentCpuUtilization = cpu
         <-ticker.C
     }
 }
+
 
 func LoadRepository(configFile string) Repository {
 
@@ -227,10 +226,10 @@ func Sampler(repo *Repository) {
         }
         for {
             sample := GetSample(repo)
-            fmt.Printf("--- process %s (pid %d) ---\n", "koala-nm", sample.Pid)
-            fmt.Printf("Number of opened files: %d\n", sample.OpenFiles)
-            fmt.Printf("Used memory (RSS): %d KiB\n", sample.MemoryUsage)
-            fmt.Printf("CPU utilization: %d%%\n", sample.CpuUsage)
+            //fmt.Printf("--- process %s (pid %d) ---\n", sample.Name, sample.Pid)
+            //fmt.Printf("Number of opened files: %d\n", sample.OpenFiles)
+            //fmt.Printf("Used memory (RSS): %d KiB\n", sample.MemoryUsage)
+            //fmt.Printf("CPU utilization: %0.2f%%\n", sample.CpuUsage)
             WriteToFile(repo, sample)
             time.Sleep(time.Second)
         }
