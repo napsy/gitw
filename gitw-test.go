@@ -145,29 +145,32 @@ func UpdateCpuUsage(ticker *time.Ticker, cmdPid int) {
             fmt.Println(":: Error getting CPU utilization from 'ps':", err)
             return
         }
-        line, err := out.ReadString('\n')
-        if err!=nil {
-            break;
-        }
-        tokens := strings.Split(line, " ")
-        ft := make([]string, 0)
-        for _, t := range(tokens) {
-            if t!="" && t!="\t" {
-                ft = append(ft, t)
+        for {
+            line, err := out.ReadString('\n')
+            if err!=nil {
+                break;
             }
+            tokens := strings.Split(line, " ")
+            ft := make([]string, 0)
+            for _, t := range(tokens) {
+                if t!="" && t!="\t" {
+                    ft = append(ft, t)
+                }
+            }
+            pid, err := strconv.Atoi(ft[1])
+            if err!=nil {
+                continue
+            }
+            if pid != cmdPid {
+                continue
+            }
+            cpu, err := strconv.ParseFloat(ft[2], 64)
+            if err!=nil {
+                fmt.Println("Error parsing CPU float value:", err)
+            }
+            currentCpuUtilization = cpu
+            break
         }
-        pid, err := strconv.Atoi(ft[1])
-        if err!=nil {
-            continue
-        }
-        if pid != cmdPid {
-            continue
-        }
-        cpu, err := strconv.ParseFloat(ft[2], 64)
-        if err!=nil {
-            fmt.Println("Error parsing CPU float value:", err)
-        }
-        currentCpuUtilization = cpu
         <-ticker.C
     }
 }
