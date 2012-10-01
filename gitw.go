@@ -202,7 +202,7 @@ func (repository Repository) RunLongTest(tmpDir string) bool {
 func SendMailNotification(repository *Repository, message string) {
 	str := "From: gitw mail notification service <" + GlobalConfig.MailAddress + ">\nTo: Repository Owner <" + repository.NotifyEmail + ">\nSubject: [" + repository.Name + "] error notification\n\nSomething went wrong while handling the repository '" + repository.Name + "'. Please check the output log files!\n"
 	auth := smtp.PlainAuth(GlobalConfig.MailUsername, GlobalConfig.MailUsername, GlobalConfig.MailPassword, GlobalConfig.MailHost)
-	err := smtp.SendMail(GlobalConfig.MailHost + ":25", auth, GlobalConfig.MailAddress, []string{repository.NotifyEmail}, []byte(str))
+	err := smtp.SendMail(GlobalConfig.MailHost + ":587", auth, GlobalConfig.MailAddress, []string{repository.NotifyEmail}, []byte(str))
 	if err != nil {
 		fmt.Printf("Error sending mail: %s\n", err)
 	}
@@ -330,7 +330,7 @@ func RepositoryWatchdog(repositories []Repository) {
 						ok2 := repository.BuildCheckout(tmpDir)
 						if ok1 == false || ok2 == false {
 							fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
-							//SendMailNotification(&repository, "")
+							SendMailNotification(&repository, "")
 						}
 						break
 					}
@@ -398,7 +398,7 @@ func RemoteRepositoryWatchdog(repositories []Repository) {
                 }
                 if ok1 == false || ok2 == false || ok3 == false {
                     fmt.Printf(":: Sending error notification message to '%s' (repository '%s' failed)...\n", repository.NotifyEmail, repository.Name)
-                    //SendMailNotification(&repository, "")
+                    SendMailNotification(&repository, "")
                 }
 
                 go repository.RunLongTest(tmpDir)
